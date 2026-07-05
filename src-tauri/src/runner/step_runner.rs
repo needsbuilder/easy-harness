@@ -89,8 +89,10 @@ pub async fn run_plan<
                     continue;
                 }
                 Ok(code) => {
-                    deps.emitter
-                        .log(run_id, &format!("터미널 세션 종료 코드 {code}"));
+                    deps.emitter.log(
+                        run_id,
+                        &deps.vault.mask(&format!("터미널 세션 종료 코드 {code}")),
+                    );
                     let failed = ev(StepStatus::Failed {
                         message: "로그인이 끝까지 진행되지 않았어요. 다시 시도해 볼까요?".into(),
                     });
@@ -104,7 +106,7 @@ pub async fn run_plan<
                     };
                 }
                 Err(e) => {
-                    deps.emitter.log(run_id, &e.to_string());
+                    deps.emitter.log(run_id, &deps.vault.mask(&e.to_string()));
                     let failed = ev(StepStatus::Failed {
                         message: "터미널을 열지 못했어요. 다시 시도해 볼까요?".into(),
                     });
@@ -494,5 +496,39 @@ mod tests {
             evs.last().unwrap().status,
             StepStatus::Done { success: false }
         ));
+    }
+
+    #[tokio::test]
+    async fn pty_step_spawn_error_log_is_masked() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let plan = pty_plan();
+        let process = FakeProcessRunner::new(vec![]);
+        let emitter = CollectingEmitter::default();
+        let opener = FakeUrlOpener::default();
+        let downloader = crate::runner::download::FakeDownloader::default();
+        let secret = "sk-live-abc123";
+        let pty = FakePtyRunner::new(vec![Err(std::io::Error::other(format!("boom {secret}")))]);
+        let mut vault = SecretVault::new();
+        vault.insert("api_key", secret);
+        let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let deps = RunDeps {
+            process: &process,
+            emitter: &emitter,
+            opener: &opener,
+            downloader: &downloader,
+            pty: &pty,
+            vault,
+        };
+        let report = run_plan(&plan, &catalog, Platform::Mac, "run-p3", deps, &mut rx).await;
+        assert!(!report.success);
+        let logs = emitter.logs();
+        assert!(
+            logs.iter().any(|l| l.contains("•••")),
+            "masked placeholder should be present in logs: {logs:?}"
+        );
+        assert!(
+            !logs.iter().any(|l| l.contains(secret)),
+            "secret value must not leak into logs: {logs:?}"
+        );
     }
 }
