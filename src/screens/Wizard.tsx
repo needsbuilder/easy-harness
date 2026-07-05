@@ -74,13 +74,13 @@ export function Wizard() {
   }, [toolId, attempt]);
 
   useEffect(() => {
-    if (state.done && state.success) navigate(`/success/${toolId}`);
-  }, [state.done, state.success, navigate, toolId]);
+    if (state.done && state.success) navigate(`/success/${toolId}`, { state: { name: toolName } });
+  }, [state.done, state.success, navigate, toolId, toolName]);
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-surface-bg dark:bg-surface-bg-dark px-8 py-12">
       <WizardStepper current={state.phase} toolName={toolName} />
-      <div className="mt-12 w-full max-w-2xl text-center">
+      <div className={`mt-12 w-full ${state.terminalSession ? "max-w-5xl" : "max-w-2xl"} text-center`}>
         {state.error ? (
           <ErrorPanel
             message={state.error.message}
@@ -93,7 +93,7 @@ export function Wizard() {
             <h1 className="text-display font-extrabold">아래 까만 창에서 로그인을 도와드릴게요</h1>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
               <TerminalPanel sessionId={state.terminalSession} />
-              <AuthGuidePanel guide={auth?.guide ?? []} />
+              <AuthGuidePanel guide={auth?.guide ?? []} stacked />
             </div>
           </>
         ) : state.waitingSecret ? (

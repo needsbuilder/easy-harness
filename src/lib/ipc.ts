@@ -14,6 +14,8 @@ export const startFlow = (toolId: string, flow: FlowKind, demo: boolean) =>
   invoke<string>("start_flow", { toolId, flow, demo });
 export const ptyInput = (sessionId: string, data: string) =>
   invoke<void>("pty_input", { sessionId, data });
+export const ptyResize = (sessionId: string, cols: number, rows: number) =>
+  invoke<void>("pty_resize", { sessionId, cols, rows });
 export const exportDiagnostics = () => invoke<string>("export_diagnostics");
 
 export function onProgress(runId: string, cb: (ev: ProgressEvent) => void): Promise<UnlistenFn> {
