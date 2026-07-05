@@ -31,13 +31,14 @@ function phaseOf(ev: ProgressEvent, targetId: string): 1 | 2 | 3 | 4 {
 
 export function runReducer(state: RunState, ev: ProgressEvent): RunState {
   const percent = ev.totalSteps === 0 ? 0 : Math.round((ev.stepIndex / ev.totalSteps) * 100);
+  const phase = Math.max(state.phase, phaseOf(ev, state.targetId)) as RunState["phase"];
   const base = {
     ...state,
     totalSteps: ev.totalSteps,
     stepIndex: ev.stepIndex,
     friendly: ev.friendly,
     percent,
-    phase: phaseOf(ev, state.targetId),
+    phase,
   };
   switch (ev.status.kind) {
     case "running":

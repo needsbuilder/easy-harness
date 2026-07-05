@@ -43,6 +43,14 @@ describe("runReducer", () => {
     );
     expect(s.percent).toBe(75); // (2+1)/4 = 75%
   });
+
+  it("의존성 설치 후 대상 detect가 와도 페이즈가 뒤로 가지 않는다", () => {
+    let s = initialRunState("mock-tool");
+    s = runReducer(s, ev({ recipeId: "mock-prereq", section: "install", stepIndex: 1 }));
+    expect(s.phase).toBe(2);
+    s = runReducer(s, ev({ recipeId: "mock-tool", section: "detect", stepIndex: 2 }));
+    expect(s.phase).toBe(2); // 버그 시 1로 후퇴
+  });
 });
 
 describe("appendLog", () => {
