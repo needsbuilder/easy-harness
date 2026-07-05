@@ -62,24 +62,27 @@ pub async fn execute_step(
         }
         Step::PathCheck { path, .. } => {
             if std::path::Path::new(path).exists() {
-                StepOutcome::Success { log: format!("확인됨: {path}") }
+                StepOutcome::Success { log: vault.mask(&format!("확인됨: {path}")) }
             } else {
                 StepOutcome::Failure {
                     message: "설치된 자리를 찾지 못했어요.".into(),
-                    log: format!("없음: {path}"),
+                    log: vault.mask(&format!("없음: {path}")),
                 }
             }
         }
-        Step::OpenUrl { url, .. } => match opener.open(&vault.substitute(url)) {
-            Ok(()) => StepOutcome::Success { log: format!("열림: {url}") },
-            Err(e) => StepOutcome::Failure {
-                message: "인터넷 창을 열지 못했어요.".into(),
-                log: vault.mask(&e),
-            },
-        },
+        Step::OpenUrl { url, .. } => {
+            let target = vault.substitute(url);
+            match opener.open(&target) {
+                Ok(()) => StepOutcome::Success { log: vault.mask(&format!("열림: {target}")) },
+                Err(e) => StepOutcome::Failure {
+                    message: "인터넷 창을 열지 못했어요.".into(),
+                    log: vault.mask(&e),
+                },
+            }
+        }
         Step::InputSecret { label, friendly } => {
             if vault.has(label) {
-                StepOutcome::Success { log: format!("입력 받음: {label}") }
+                StepOutcome::Success { log: vault.mask(&format!("입력 받음: {label}")) }
             } else {
                 StepOutcome::NeedsSecret { label: label.clone(), friendly: friendly.clone() }
             }
@@ -201,6 +204,24 @@ mod tests {
         };
         assert_eq!(runner.calls()[0].1, vec!["--key=sk-live-1234".to_string()]); // 실행엔 실값
         assert!(!log.contains("sk-live-1234")); // 로그엔 마스킹
+        assert!(log.contains("•••"));
+    }
+
+    #[tokio::test]
+    async fn open_url_substitutes_secret_and_masks_log() {
+        let runner = FakeProcessRunner::new(vec![]);
+        let opener = FakeUrlOpener::default();
+        let mut vault = SecretVault::new();
+        vault.insert("api_key", "tok-999");
+        let step = Step::OpenUrl {
+            friendly: "발급 페이지".into(),
+            url: "https://x.test/issue?key={{secret:api_key}}".into(),
+        };
+        let StepOutcome::Success { log } = execute_step(&step, &runner, &vault, &opener).await else {
+            panic!("Success여야 함");
+        };
+        assert!(opener.opened()[0].contains("tok-999")); // 실제 열기엔 실값
+        assert!(!log.contains("tok-999")); // 로그엔 마스킹
         assert!(log.contains("•••"));
     }
 }
