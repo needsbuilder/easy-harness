@@ -1,9 +1,11 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 2 구현 계획 작성 완료** (2026-07-05): `docs/superpowers/plans/2026-07-05-easy-harness-m2-skeleton-engine.md`
-- 태스크 16개, TDD 기반. 스택 버전은 2026-07-05 라이브 검증 완료 (계획 Global Constraints 절에 기록)
-- **다음 행동: 사용자에게 실행 방식(서브에이전트 vs 인라인) 답 받은 뒤 계획 실행 시작** (superpowers:subagent-driven-development 또는 executing-plans)
+- **Task 4 완료** (2026-07-05): 픽스처 레시피 3종 + 카탈로그 로더
+  - mock-prereq/tool/plugin 픽스처 JSON, Catalog::load_dir() 구현
+  - 3/3 테스트 통과, 회귀 없음, clippy 깨끗함
+  - 커밋 7061865: `feat: 픽스처 레시피 3종 + 카탈로그 로더`
+- **다음 행동: Task 5 (플랜 빌더) 시작** (의존도 그래프 구성, Catalog::get() 활용)
 
 ## 다음 스텝
 1. 마일스톤 2 실행: feature/m2-skeleton-engine 브랜치, Task 1부터 순서대로
