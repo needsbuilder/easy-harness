@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "mock-prereq",
+  "name": "모의 준비물",
+  "kind": "prerequisite",
+  "easyDescription": "도구가 달리는 도로 같은 준비물이에요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "platforms": {
+    "mac": {
+      "detect": [ { "type": "check_command", "friendly": "준비물이 이미 있는지 볼게요", "command": "echo", "args": ["found"] } ],
+      "install": [ { "type": "run_command", "friendly": "지금 준비물을 설치하고 있어요", "command": "echo", "args": ["installing prereq"] } ],
+      "verify": [ { "type": "check_command", "friendly": "준비물이 잘 깔렸는지 볼게요", "command": "echo", "args": ["ok"] } ],
+      "rollback": [ { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "echo", "args": ["rollback prereq"] } ]
+    },
+    "windows": {
+      "detect": [ { "type": "check_command", "friendly": "준비물이 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "echo found"] } ],
+      "install": [ { "type": "run_command", "friendly": "지금 준비물을 설치하고 있어요", "command": "cmd", "args": ["/C", "echo installing prereq"] } ],
+      "verify": [ { "type": "check_command", "friendly": "준비물이 잘 깔렸는지 볼게요", "command": "cmd", "args": ["/C", "echo ok"] } ],
+      "rollback": [ { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "echo rollback"] } ]
+    }
+  }
+}
