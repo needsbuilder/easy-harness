@@ -59,7 +59,7 @@ export function Welcome() {
             <p className="text-caption text-txt-tertiary">앱을 끄고 다시 켜도 좋고, 아래 버튼을 눌러도 돼요.</p>
             <button
               type="button"
-              className="rounded-badge border border-line dark:border-line-dark px-4 py-2 font-bold hover:bg-surface-card-hover"
+              className="rounded-badge border border-line dark:border-line-dark px-4 py-2 font-bold hover:bg-surface-card-hover dark:hover:bg-surface-card-hover-dark"
               onClick={check}
             >
               다시 점검하기

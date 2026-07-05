@@ -29,7 +29,7 @@ export function Catalog() {
           <p className="font-bold">도구 목록을 가져오지 못했어요</p>
           <button
             type="button"
-            className="rounded-badge border border-line dark:border-line-dark px-4 py-2 font-bold hover:bg-surface-card-hover"
+            className="rounded-badge border border-line dark:border-line-dark px-4 py-2 font-bold hover:bg-surface-card-hover dark:hover:bg-surface-card-hover-dark"
             onClick={load}
           >
             다시 불러오기
