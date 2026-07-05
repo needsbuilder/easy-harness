@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { LogPanel } from "../components/LogPanel";
 import { ErrorPanel } from "../components/ErrorPanel";
@@ -13,25 +13,45 @@ export function Wizard() {
   const [state, setState] = useState<RunState>(() => initialRunState(toolId));
   const [toolName, setToolName] = useState(toolId);
   const [showLog, setShowLog] = useState(false);
-  const started = useRef(false);
+  const [attempt, setAttempt] = useState(0);
 
-  const start = useCallback(async () => {
-    setState(initialRunState(toolId));
-    const preview = await getDryRun(toolId);
-    const target = preview.steps.find((s) => s.recipeId === toolId);
-    if (target) setToolName(target.recipeName);
-    const runId = await startFlow(toolId, "install", true); // M2: 드라이런 데모 고정
-    const unProgress = await onProgress(runId, (ev) => setState((s) => runReducer(s, ev)));
-    const unLog = await onLog(runId, (line) => setState((s) => appendLog(s, line)));
-    return () => { unProgress(); unLog(); };
-  }, [toolId]);
-
+  // 취소 패턴: StrictMode(dev)의 mount→cleanup→mount 이중 호출에서 1차 mount는
+  // cancelled=true를 만난 시점 이후로는 리스너 없이 흘러가고(등록된 구독은 즉시 정리),
+  // 2차(실제) mount만 살아있는 구독을 유지한다. 데모 런(start_flow)이 백엔드에서
+  // 2번 시작될 가능성이 있지만 무해하며, UI는 runId 필터 덕분에 2차 런만 추적한다.
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    const cleanup = start();
-    return () => { cleanup.then((fn) => fn?.()); };
-  }, [start]);
+    let cancelled = false;
+    let unProgress: (() => void) | undefined;
+    let unLog: (() => void) | undefined;
+
+    setState(initialRunState(toolId));
+    (async () => {
+      try {
+        const preview = await getDryRun(toolId);
+        if (cancelled) return;
+        const target = preview.steps.find((s) => s.recipeId === toolId);
+        if (target) setToolName(target.recipeName);
+        const runId = await startFlow(toolId, "install", true); // M2: 드라이런 데모 고정
+        if (cancelled) return;
+        const p = await onProgress(runId, (ev) => setState((s) => runReducer(s, ev)));
+        if (cancelled) { p(); return; }
+        unProgress = p;
+        const l = await onLog(runId, (line) => setState((s) => appendLog(s, line)));
+        if (cancelled) { l(); return; }
+        unLog = l;
+      } catch {
+        if (!cancelled) {
+          setState((s) => ({ ...s, error: { message: "시작하지 못했어요. 다시 시도해 볼까요?", friendly: "준비 단계" } }));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unProgress?.();
+      unLog?.();
+    };
+  }, [toolId, attempt]);
 
   useEffect(() => {
     if (state.done && state.success) navigate(`/success/${toolId}`);
@@ -45,7 +65,7 @@ export function Wizard() {
           <ErrorPanel
             message={state.error.message}
             friendly={state.error.friendly}
-            onRetry={() => { started.current = false; setState(initialRunState(toolId)); start(); }}
+            onRetry={() => setAttempt((n) => n + 1)}
             onCopyLog={() => navigator.clipboard.writeText(state.logs.join("\n"))}
           />
         ) : (

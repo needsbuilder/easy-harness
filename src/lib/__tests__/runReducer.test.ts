@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialRunState, runReducer } from "../runReducer";
+import { appendLog, initialRunState, runReducer } from "../runReducer";
 import type { ProgressEvent } from "../types";
 
 const ev = (over: Partial<ProgressEvent>): ProgressEvent => ({
@@ -34,5 +34,25 @@ describe("runReducer", () => {
   it("waitingSecret 라벨을 노출한다", () => {
     const s = runReducer(initialRunState("mock-tool"), ev({ status: { kind: "waitingSecret", label: "api_key" } }));
     expect(s.waitingSecret).toBe("api_key");
+  });
+
+  it("succeeded는 (stepIndex+1)/totalSteps 퍼센트 공식을 쓴다", () => {
+    const s = runReducer(
+      initialRunState("mock-tool"),
+      ev({ stepIndex: 2, totalSteps: 4, status: { kind: "succeeded" } }),
+    );
+    expect(s.percent).toBe(75); // (2+1)/4 = 75%
+  });
+});
+
+describe("appendLog", () => {
+  it("최근 500줄만 남기고 앞부분을 잘라낸다", () => {
+    let s = initialRunState("mock-tool");
+    for (let i = 0; i < 502; i += 1) {
+      s = appendLog(s, `line-${i}`);
+    }
+    expect(s.logs).toHaveLength(500);
+    expect(s.logs[0]).toBe("line-2"); // line-0, line-1이 잘려나감
+    expect(s.logs[s.logs.length - 1]).toBe("line-501");
   });
 });
