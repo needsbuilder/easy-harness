@@ -20,8 +20,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let catalog =
-                Catalog::load_dir(&Catalog::bundled_dir()).expect("번들 레시피 로딩 실패");
+            let bundled = app
+                .path()
+                .resource_dir()
+                .map(|d| d.join("recipes"))
+                .ok()
+                .filter(|d| {
+                    std::fs::read_dir(d)
+                        .map(|mut e| e.next().is_some())
+                        .unwrap_or(false)
+                })
+                .unwrap_or_else(Catalog::bundled_dir);
+            let catalog = Catalog::load_dir(&bundled).expect("번들 레시피 로딩 실패");
             let data_dir = app.path().app_data_dir()?;
             let store = StateStore::new(data_dir.join("installed.json"));
             app.manage(AppContext {

@@ -23,6 +23,18 @@ pub trait UrlOpener: Send + Sync {
     fn open(&self, url: &str) -> Result<(), String>;
 }
 
+/// 사용자 홈 폴더 (mac: $HOME, windows: %USERPROFILE%)
+pub fn home_dir() -> String {
+    std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_default()
+}
+
+/// 스텝 문자열의 "{{home}}"을 홈 폴더로 치환
+pub fn expand_home(text: &str) -> String {
+    text.replace("{{home}}", &home_dir())
+}
+
 #[derive(Default)]
 pub struct FakeUrlOpener {
     opened: Mutex<Vec<String>>,
@@ -50,8 +62,11 @@ pub async fn execute_step(
 ) -> StepOutcome {
     match step {
         Step::CheckCommand { command, args, .. } | Step::RunCommand { command, args, .. } => {
-            let command = vault.substitute(command);
-            let args: Vec<String> = args.iter().map(|a| vault.substitute(a)).collect();
+            let command = expand_home(&vault.substitute(command));
+            let args: Vec<String> = args
+                .iter()
+                .map(|a| expand_home(&vault.substitute(a)))
+                .collect();
             match runner.run(&command, &args).await {
                 Ok(out) if out.exit_code == 0 => StepOutcome::Success {
                     log: vault.mask(&format!("{}{}", out.stdout, out.stderr)),
@@ -70,7 +85,8 @@ pub async fn execute_step(
             }
         }
         Step::PathCheck { path, .. } => {
-            if std::path::Path::new(path).exists() {
+            let path = expand_home(&vault.substitute(path));
+            if std::path::Path::new(&path).exists() {
                 StepOutcome::Success {
                     log: vault.mask(&format!("확인됨: {path}")),
                 }
@@ -82,7 +98,7 @@ pub async fn execute_step(
             }
         }
         Step::OpenUrl { url, .. } => {
-            let target = vault.substitute(url);
+            let target = expand_home(&vault.substitute(url));
             match opener.open(&target) {
                 Ok(()) => StepOutcome::Success {
                     log: vault.mask(&format!("열림: {target}")),
@@ -112,7 +128,7 @@ pub async fn execute_step(
             args,
             ..
         } => {
-            let url = vault.substitute(url);
+            let url = expand_home(&vault.substitute(url));
             let dest = std::env::temp_dir().join(file_name);
             if let Err(e) = downloader.download(&url, &dest).await {
                 return StepOutcome::Failure {
@@ -121,10 +137,10 @@ pub async fn execute_step(
                 };
             }
             let file = dest.to_string_lossy();
-            let command = vault.substitute(command).replace("{{file}}", &file);
+            let command = expand_home(&vault.substitute(command)).replace("{{file}}", &file);
             let args: Vec<String> = args
                 .iter()
-                .map(|a| vault.substitute(a).replace("{{file}}", &file))
+                .map(|a| expand_home(&vault.substitute(a)).replace("{{file}}", &file))
                 .collect();
             match runner.run(&command, &args).await {
                 Ok(out) if out.exit_code == 0 => StepOutcome::Success {
@@ -386,6 +402,27 @@ mod tests {
             "내려받는 중에 인터넷이 잠깐 끊겼어요. 다시 시도해 볼까요?"
         );
         assert!(runner.calls().is_empty()); // 실패 시 실행하지 않는다
+    }
+
+    #[tokio::test]
+    async fn home_placeholder_is_expanded_in_command_and_args() {
+        let runner = FakeProcessRunner::new(vec![ok("v1")]);
+        let vault = SecretVault::new();
+        let opener = FakeUrlOpener::default();
+        let downloader = crate::runner::download::FakeDownloader::default();
+        let step = Step::CheckCommand {
+            friendly: "확인 중".into(),
+            command: "{{home}}/.local/bin/tool".into(),
+            args: vec!["--config={{home}}/.tool.json".into()],
+        };
+        let _ = execute_step(&step, &runner, &vault, &opener, &downloader).await;
+        let home = crate::runner::home_dir();
+        assert_eq!(runner.calls()[0].0, format!("{home}/.local/bin/tool"));
+        assert_eq!(
+            runner.calls()[0].1[0],
+            format!("--config={home}/.tool.json")
+        );
+        assert!(!home.is_empty());
     }
 
     #[tokio::test]
