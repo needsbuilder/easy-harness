@@ -1,17 +1,17 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 1 (브랜드·UI 디자인) 완료, main에 머지됨.**
-- 산출물 전부 사용자 승인 완료. 인덱스: `design/README.md`
+- **마일스톤 2 구현 계획 작성 완료** (2026-07-05): `docs/superpowers/plans/2026-07-05-easy-harness-m2-skeleton-engine.md`
+- 태스크 16개, TDD 기반. 스택 버전은 2026-07-05 라이브 검증 완료 (계획 Global Constraints 절에 기록)
+- **다음 행동: 사용자에게 실행 방식(서브에이전트 vs 인라인) 답 받은 뒤 계획 실행 시작** (superpowers:subagent-driven-development 또는 executing-plans)
 
 ## 다음 스텝
-1. (완료) feature/brand-design → main 머지
-2. **마일스톤 2 계획 작성** (writing-plans): Tauri 2 앱 뼈대 + 레시피 엔진 + 스텝 러너 + 드라이런. 입력: `design/README.md`의 자산·토큰
-3. 마일스톤 3~4: 레시피 (하네스 6종 / 오픈소스·플러그인 5종, 지원 모델 라이브 검증)
+1. 마일스톤 2 실행: feature/m2-skeleton-engine 브랜치, Task 1부터 순서대로
+2. 완료 후 마일스톤 3 계획 (하네스 6종 실물 레시피 — 설치법·모델 목록 반드시 라이브 검증)
 
 ## 핵심 결정/주의
-- 브랜드: 손오공 "오공이" + 긴고아=하네스 스토리 (`design/DECISION.md`)
-- **주 색 = 긴고아 골드** (청록 최소화, 사용자 명시). **UI 카피 em dash 금지, humanize 검수** (메모리에도 저장됨)
-- 카탈로그 = 하네스 6종만, 플러그인·오픈소스는 별도 메뉴 (계층 분리, 사용자 명시)
-- 도구 공식 로고 검증 완료: Anthropic·OpenAI·OpenClaw(랍스터 공식)·NousResearch(Hermes)·Anomaly(OpenCode). GajaeCode는 로고 없음(준비 중 표기)
-- 스펙: docs/superpowers/specs/2026-07-05-easy-harness-design.md · M1 계획: docs/superpowers/plans/2026-07-05-easy-harness-brand-design.md
+- M2 확정 스택: Tauri 2.11.x · React 19.2.7 · react-router 7.18.1(HashRouter, v8은 3주차라 보류) · Tailwind 4.3.2(@theme CSS-first) · Vitest 4 + mockIPC · 명령 실행 tokio::process 직접
+- M2 범위 제외(계획에 명시): download_run 실행기·pty_session 실배선·레시피 원격 갱신+ed25519 서명·진단 zip → 마일스톤 3, 자동 업데이트 → 마일스톤 5
+- 마법사는 M2에서 드라이런 데모 모드(demo: true) 고정, CI가 번들 레시피 전수 × 2 OS 드라이런 검증
+- 브랜드 규칙 유지: 골드 주 색, UI 카피 em dash·이모지 금지 (드라이런 테스트가 em dash를 기계 검사)
+- 스펙: docs/superpowers/specs/2026-07-05-easy-harness-design.md · 디자인 자산: design/README.md
