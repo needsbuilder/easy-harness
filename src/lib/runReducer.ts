@@ -7,6 +7,7 @@ export interface RunState {
   friendly: string;
   percent: number;
   phase: 1 | 2 | 3 | 4;
+  section: string;
   logs: string[];
   error: { message: string; friendly: string } | null;
   waitingSecret: string | null;
@@ -17,7 +18,7 @@ export interface RunState {
 export function initialRunState(targetId: string): RunState {
   return {
     targetId, totalSteps: 0, stepIndex: 0, friendly: "준비하고 있어요",
-    percent: 0, phase: 1, logs: [], error: null, waitingSecret: null,
+    percent: 0, phase: 1, section: "detect", logs: [], error: null, waitingSecret: null,
     done: false, success: false,
   };
 }
@@ -39,6 +40,7 @@ export function runReducer(state: RunState, ev: ProgressEvent): RunState {
     friendly: ev.friendly,
     percent,
     phase,
+    section: ev.section,
   };
   switch (ev.status.kind) {
     case "running":

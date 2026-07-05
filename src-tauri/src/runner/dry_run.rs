@@ -17,11 +17,19 @@ pub struct DryRunStep {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DryRunAuth {
+    pub pattern: String,
+    pub guide: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DryRunReport {
     pub target_id: String,
     pub platform: String,
     pub tool_order: Vec<String>,
     pub steps: Vec<DryRunStep>,
+    pub auth: Option<DryRunAuth>,
 }
 
 pub fn dry_run(
@@ -30,6 +38,19 @@ pub fn dry_run(
     platform: Platform,
 ) -> Result<DryRunReport, EngineError> {
     let plan = build_plan(catalog, target_id, platform, Flow::Install, &[])?;
+    let auth = catalog
+        .get(target_id)
+        .and_then(|r| r.platforms.get(platform))
+        .and_then(|spec| spec.auth.as_ref())
+        .map(|a| DryRunAuth {
+            pattern: match a.pattern {
+                crate::recipe::schema::AuthPattern::BrowserLogin => "browser_login",
+                crate::recipe::schema::AuthPattern::ApiKey => "api_key",
+                crate::recipe::schema::AuthPattern::InteractiveTerminal => "interactive_terminal",
+            }
+            .to_string(),
+            guide: a.guide.clone(),
+        });
     Ok(DryRunReport {
         target_id: plan.target_id.clone(),
         platform: platform.as_str().to_string(),
@@ -45,6 +66,7 @@ pub fn dry_run(
                 friendly: p.step.friendly().to_string(),
             })
             .collect(),
+        auth,
     })
 }
 
@@ -114,6 +136,15 @@ mod tests {
     use super::*;
     use crate::recipe::loader::Catalog;
     use crate::recipe::schema::Platform;
+
+    #[test]
+    fn report_carries_target_auth_pattern_and_guide() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let report = dry_run(&catalog, "mock-tool", Platform::Mac).unwrap();
+        let auth = report.auth.expect("mock-tool mac에는 auth가 있음");
+        assert_eq!(auth.pattern, "browser_login");
+        assert_eq!(auth.guide.len(), 3);
+    }
 
     #[test]
     fn report_lists_steps_in_dependency_order() {
