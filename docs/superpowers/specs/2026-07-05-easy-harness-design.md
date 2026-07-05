@@ -42,6 +42,8 @@
 
 **하네스 6종**: Claude Code, Codex/lazycodex, GajaeCode, OpenClaw, Hermes, OpenCode
 
+(Codex/lazycodex는 카탈로그에서 한 슬롯으로 취급한다. lazycodex가 Codex의 별도 설치물인지 확장인지는 라이브 검증 시 확인해 레시피를 1개 또는 2개로 확정한다 — 9절 참조.)
+
 **오픈소스 4종**: insane-search, k-skill, korean-law-mcp, im-not-ai
 
 각 도구의 정확한 설치·인증 절차는 변동이 잦으므로, 레시피 작성 시점에 공식 문서/저장소를 라이브로 확인해 반영한다(9절 "라이브 검증 목록").
@@ -114,7 +116,7 @@
 
 시간이 지나면 바뀌는 정보라 스펙에 박제하지 않고, 구현 각 단계 시작 시 라이브 확인한다:
 
-1. 하네스 6종 + 오픈소스 4종 각각의 최신 설치 명령·지원 OS·인증 방식 (특히 윈도우 네이티브 지원 여부 vs WSL 필요 여부)
+1. 하네스 6종 + 오픈소스 4종 각각의 최신 설치 명령·지원 OS·인증 방식 (특히 윈도우 네이티브 지원 여부 vs WSL 필요 여부, Codex와 lazycodex의 관계)
 2. Apple Developer Program 가입 절차·연회비, 윈도우 코드 서명 옵션(Azure Trusted Signing 등)의 최신 가격·한국 개인/사업자 가입 가능 여부
 3. tauri-plugin-pty 등 PTY 플러그인의 최신 유지보수 상태 (2026-07 확인 기준 활성)
 4. Node.js LTS 현재 버전과 공식 배포본 URL 패턴
@@ -131,7 +133,7 @@
 ## 11. 배포·서명·업데이트
 
 - **맥**: Apple Developer Program → Developer ID 서명 + 공증 → .dmg 배포.
-- **윈도우**: 코드 서명 → NSIS .exe 또는 .msi 배포 (Tauri 기본 지원 포맷 중 구현 시 선택).
+- **윈도우**: 코드 서명 → NSIS .exe 배포를 기본으로 한다 (.msi는 기업 배포 요청이 생길 때만 추가).
 - **자동 업데이트**: Tauri 내장 업데이터. 릴리스 채널은 GitHub Releases.
 - **CI**: GitHub Actions에서 맥/윈도우 빌드 + 서명 + 릴리스 자동화.
 
