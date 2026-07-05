@@ -15,6 +15,11 @@ impl Catalog {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("recipes")
     }
 
+    /// mock 레시피 픽스처 (엔진 유닛 테스트 전용)
+    pub fn fixture_dir() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipes")
+    }
+
     pub fn load_dir(dir: &Path) -> Result<Catalog, EngineError> {
         let mut recipes = Vec::new();
         let mut seen: HashSet<String> = HashSet::new();
@@ -59,8 +64,8 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn loads_bundled_fixture_recipes() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+    fn loads_fixture_recipes() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         assert_eq!(catalog.recipes.len(), 3);
         assert!(catalog.get("mock-tool").is_some());
         assert!(catalog.get("no-such-id").is_none());
@@ -69,7 +74,7 @@ mod tests {
     #[test]
     fn rejects_duplicate_ids() {
         let dir = tempfile::tempdir().unwrap();
-        let src = Catalog::bundled_dir().join("mock-tool.json");
+        let src = Catalog::fixture_dir().join("mock-tool.json");
         fs::copy(&src, dir.path().join("a.json")).unwrap();
         fs::copy(&src, dir.path().join("b.json")).unwrap();
         let err = Catalog::load_dir(dir.path()).unwrap_err();

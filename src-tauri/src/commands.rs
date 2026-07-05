@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn catalog_entries_carry_install_state_and_missing_requires() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         let state = AppState {
             installations: vec![Installation {
                 recipe_id: "mock-prereq".into(),

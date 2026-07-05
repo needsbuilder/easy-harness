@@ -213,7 +213,7 @@ mod tests {
 
     #[tokio::test]
     async fn happy_path_emits_running_succeeded_done() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         let plan = build_plan(&catalog, "mock-tool", Platform::Mac, Flow::Install, &[]).unwrap();
         // 프로세스를 쓰는 스텝은 6개: mock-prereq의 check·run·check 3 + mock-tool의
         // detect check 1, install run_command 1, verify check 1 (path_check·open_url은 프로세스 안 씀)
@@ -248,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn install_failure_triggers_rollback_of_failing_recipe() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         let plan = build_plan(&catalog, "mock-prereq", Platform::Mac, Flow::Install, &[]).unwrap();
         // detect ok → install fail → (rollback echo가 이어서 호출됨)
         let process = FakeProcessRunner::new(vec![ok(), fail(), ok()]);
@@ -278,7 +278,7 @@ mod tests {
 
     #[tokio::test]
     async fn detect_failure_is_not_fatal() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         let plan = build_plan(&catalog, "mock-prereq", Platform::Mac, Flow::Install, &[]).unwrap();
         // detect fail(미설치 의미) → install ok → verify ok
         let process = FakeProcessRunner::new(vec![fail(), ok(), ok()]);
@@ -300,7 +300,7 @@ mod tests {
 
     #[tokio::test]
     async fn waiting_secret_then_resume() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         // input_secret 스텝을 가진 임시 플랜을 직접 구성
         use crate::recipe::plan::{InstallPlan, PlannedStep, Section};
         use crate::recipe::schema::Step;
