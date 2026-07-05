@@ -14,6 +14,7 @@ export const startFlow = (toolId: string, flow: FlowKind, demo: boolean) =>
   invoke<string>("start_flow", { toolId, flow, demo });
 export const ptyInput = (sessionId: string, data: string) =>
   invoke<void>("pty_input", { sessionId, data });
+export const exportDiagnostics = () => invoke<string>("export_diagnostics");
 
 export function onProgress(runId: string, cb: (ev: ProgressEvent) => void): Promise<UnlistenFn> {
   return listen<ProgressEvent>("install://progress", (e) => {
