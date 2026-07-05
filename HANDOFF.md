@@ -1,18 +1,21 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 2 (앱 뼈대 + 레시피 엔진 + 스텝 러너 + 드라이런) 완료, main에 머지됨** (2026-07-05, 머지 커밋 029ebf8)
-- 태스크 16개 전부 구현·리뷰 통과. 최종 전체 리뷰(opus) 판정: Ready to merge = Yes (Critical 0)
-- 테스트: cargo 37 + vitest 19 전부 GREEN, clippy/fmt 클린. `tauri dev` 부팅 스모크 통과. **GUI 육안 데모 확인 완료 (사용자, 2026-07-05 "다 잘되네")**
+- **마일스톤 3 구현 계획 작성 완료** (2026-07-05): `docs/superpowers/plans/2026-07-05-easy-harness-m3-real-recipes.md` (20개 태스크)
+- 하네스 6종 설치·인증·모델 정보는 멀티에이전트 워크플로우(리서치 6 + 교차 검증 6 + 크레이트 1 + Node LTS 1)로 **2026-07-05 라이브 검증 완료, 전 항목 confidence high**. 결과는 계획서에 박제됨 (구현 중 재검증 불필요)
+- 계획 자기 리뷰 통과: 플레이스홀더 0, 레시피 JSON 8종 기계 검증 OK
 
 ## 다음 스텝
-1. **마일스톤 3 계획 작성** (writing-plans): 하네스 6종 실물 레시피 (설치→인증→verify). **각 도구 설치법·지원 모델·인증 방식 라이브 검증 필수** (스펙 9절)
-2. M3에 포함할 이월 작업: download_run 실행기(reqwest 버전 라이브 확인) · pty_session 배선(tauri-plugin-pty 0.3.0 재확인) · 레시피 원격 갱신+ed25519 서명(2.2.0 stable, 3.0-rc 재확인) · Auth 화면 실플로우 배선 · 마법사 demo:false 전환 · phaseOf 역행 보정 · SecretVault 긴 값 우선 정렬 · Welcome/Catalog IPC 에러 상태 · 진단 zip
-3. GitHub 리모트 미등록 상태 — 리모트 만들어야 CI(GitHub Actions)와 푸시 가능
+1. **M3 계획 실행** — 실행 방식 사용자 선택 대기: 서브에이전트 주도(권장) vs 인라인(executing-plans)
+2. 실행 완료 후: 서명 개인키(`recipe-signing-secret.key`) 형에게 안전 보관 전달, 레시피 원격 저장소(`needslab-ai/easy-harness-recipes`) 생성은 M5
+3. GitHub 리모트 여전히 미등록 (CI 실행하려면 필요)
 
-## 핵심 결정/주의
-- 엔진 결정: 플랜 auth는 설치되는 모든 도구에 포함 / Done 이벤트 step_index==total / 드라이런 게이트는 레시피가 선언한 플랫폼만 검증 (단일 플랫폼 레시피 안전)
-- M2 특성(결함 아님): 마법사·대시보드가 demo:true 고정이라 설치 상태 영속화 분기를 UI에서 안 탄다 — 엔진은 Rust 테스트로 검증됨, 실노출은 M3
-- 이벤트 채널: "install://progress"(ProgressEvent, status tag="kind") · "install://log". TS 미러는 src/lib/types.ts 단일 소스
-- 브랜드 규칙 유지: 골드 주 색, UI 카피 em dash·이모지 금지 (드라이런 테스트가 기계 검사)
-- SDD 실행 기록: .superpowers/sdd/progress.md (gitignored) · 계획: docs/superpowers/plans/2026-07-05-easy-harness-m2-skeleton-engine.md
+## 핵심 결정/주의 (M3 계획, 라이브 검증 근거)
+- 공용 준비물 = **Node.js LTS v24.18.0 + Bun** 2종 (git 제외: 어느 하네스도 필수 아님. GajaeCode가 Bun >= 1.3.14 요구가 핵심 발견)
+- 6종 모두 공식 설치 스크립트/Bun 설치가 기본, 인증은 전부 대화형 터미널 또는 브라우저 OAuth. api_key 패턴(SecretForm)은 엔진·UI만 완비, 실사용은 M4 플러그인부터
+- 크레이트 확정: reqwest 0.13(rustls 기본) · **portable-pty 0.9 채택**(tauri-plugin-pty 0.3.0은 초기 단계라 배제) · ed25519-dalek 2.2 stable(`verify_strict` 필수, 3.0은 아직 rc) · zip 8 · @xterm/xterm 6.0.0
+- 엔진 추가 결정: `{{home}}` 치환, **윈도우 PATH 신선화**(레지스트리 재읽기, 설치 직후 명령 탐색), mac 스텝은 `/bin/zsh -lc` 래핑
+- Auth.tsx 단독 화면은 삭제하고 마법사에 통합. Windows 경로 실검증은 M6 VM 스모크(어긋나면 레시피 원격 갱신으로 수정)
+- stderr 패턴 매칭 맞춤 에러 안내는 M3 범위 밖 (M4+ 백로그)
+- 브랜드 규칙 유지: 골드 주 색, 카피 em dash·이모지 금지 (계획 Task 5가 기계 검사를 name·설명·가이드까지 확장)
+- 이벤트 채널: 기존 "install://progress"·"install://log" + 신규 "pty://data"·"catalog://updated". TS 미러는 src/lib/types.ts 단일 소스
