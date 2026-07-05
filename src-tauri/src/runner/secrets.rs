@@ -28,12 +28,14 @@ impl SecretVault {
     }
 
     /// 로그·이벤트로 나가는 모든 문자열에 적용. 실값을 •••로.
+    /// 긴 값 먼저 치환한다. 짧은 비밀값이 긴 비밀값의 일부일 때
+    /// 짧은 것이 먼저 치환되면 긴 값의 나머지가 유출되기 때문.
     pub fn mask(&self, text: &str) -> String {
         let mut out = text.to_string();
-        for value in self.values.values() {
-            if !value.is_empty() {
-                out = out.replace(value, "•••");
-            }
+        let mut values: Vec<&String> = self.values.values().filter(|v| !v.is_empty()).collect();
+        values.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
+        for value in values {
+            out = out.replace(value.as_str(), "•••");
         }
         out
     }
@@ -55,5 +57,16 @@ mod tests {
         assert_eq!(vault.mask("token sk-live-1234 ok"), "token ••• ok");
         assert!(vault.has("api_key"));
         assert!(!vault.has("none"));
+    }
+
+    #[test]
+    fn mask_replaces_longest_secret_first() {
+        let mut vault = SecretVault::new();
+        // 8개의 접두어 비밀값: 어느 하나라도 짧은 것이 먼저 치환되면 꼬리가 남는다
+        let full = "abcdefgh";
+        for len in 1..=full.len() {
+            vault.insert(&format!("k{len}"), &full[..len]);
+        }
+        assert_eq!(vault.mask("token abcdefgh end"), "token ••• end");
     }
 }
