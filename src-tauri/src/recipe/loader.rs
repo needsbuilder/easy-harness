@@ -24,10 +24,17 @@ impl Catalog {
             .collect();
         entries.sort(); // 결정적 순서 (테스트·드라이런 리포트 안정성)
         for path in entries {
-            let file = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let file = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             let text = std::fs::read_to_string(&path)?;
             let recipe = Recipe::parse(&text).map_err(|e| match e {
-                EngineError::RecipeParse { message, .. } => EngineError::RecipeParse { file: file.clone(), message },
+                EngineError::RecipeParse { message, .. } => EngineError::RecipeParse {
+                    file: file.clone(),
+                    message,
+                },
                 other => other,
             })?;
             if !seen.insert(recipe.id.clone()) {

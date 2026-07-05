@@ -29,17 +29,28 @@ pub async fn probe_env(runner: &impl ProcessRunner) -> EnvReport {
     };
     let mut checks = Vec::new();
     for (id, label, command, args) in [
-        ("node", "Node.js 준비물", "node", vec!["--version".to_string()]),
+        (
+            "node",
+            "Node.js 준비물",
+            "node",
+            vec!["--version".to_string()],
+        ),
         ("git", "git 준비물", "git", vec!["--version".to_string()]),
     ] {
         let result = runner.run(command, &args).await;
         let (found, version) = match result {
-            Ok(out) if out.exit_code == 0 => {
-                (true, Some(out.stdout.trim().to_string()).filter(|s| !s.is_empty()))
-            }
+            Ok(out) if out.exit_code == 0 => (
+                true,
+                Some(out.stdout.trim().to_string()).filter(|s| !s.is_empty()),
+            ),
             _ => (false, None),
         };
-        checks.push(EnvCheck { id: id.into(), label: label.into(), found, version });
+        checks.push(EnvCheck {
+            id: id.into(),
+            label: label.into(),
+            found,
+            version,
+        });
     }
     let missing_count = checks.iter().filter(|c| !c.found).count();
     EnvReport {
@@ -57,7 +68,11 @@ mod tests {
     use crate::runner::process::{FakeProcessRunner, ProcessOutput};
 
     fn ok(stdout: &str) -> std::io::Result<ProcessOutput> {
-        Ok(ProcessOutput { exit_code: 0, stdout: stdout.into(), stderr: String::new() })
+        Ok(ProcessOutput {
+            exit_code: 0,
+            stdout: stdout.into(),
+            stderr: String::new(),
+        })
     }
 
     #[tokio::test]
@@ -76,6 +91,9 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![]); // 응답 없음 = 전부 실패
         let report = probe_env(&runner).await;
         assert_eq!(report.missing_count, 2);
-        assert!(report.checks.iter().all(|c| !c.found && c.version.is_none()));
+        assert!(report
+            .checks
+            .iter()
+            .all(|c| !c.found && c.version.is_none()));
     }
 }

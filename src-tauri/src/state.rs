@@ -59,16 +59,23 @@ impl StateStore {
             std::fs::create_dir_all(parent)?;
         }
         let tmp = self.path.with_extension("json.tmp");
-        std::fs::write(&tmp, serde_json::to_string_pretty(state).expect("직렬화 실패 불가"))?;
+        std::fs::write(
+            &tmp,
+            serde_json::to_string_pretty(state).expect("직렬화 실패 불가"),
+        )?;
         std::fs::rename(&tmp, &self.path)?; // 원자적 교체
         Ok(())
     }
 
     pub fn upsert(&self, item: Installation) -> Result<AppState, EngineError> {
         let mut state = self.load();
-        state.installations.retain(|i| i.recipe_id != item.recipe_id);
+        state
+            .installations
+            .retain(|i| i.recipe_id != item.recipe_id);
         state.installations.push(item);
-        state.installations.sort_by(|a, b| a.recipe_id.cmp(&b.recipe_id));
+        state
+            .installations
+            .sort_by(|a, b| a.recipe_id.cmp(&b.recipe_id));
         self.save(&state)?;
         Ok(state)
     }
