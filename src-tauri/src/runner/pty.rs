@@ -89,16 +89,29 @@ impl PtyRunner for PortablePtyRunner {
             .map_err(std::io::Error::other)?;
         drop(pair.slave);
 
-        let writer = pair.master.take_writer().map_err(std::io::Error::other)?;
+        // 이 지점부터 child가 살아있으므로, 아래 조기 반환 경로마다
+        // registry 정리(insert된 경우)와 child kill+wait 회수를 보장해야
+        // 좀비 registry 엔트리·미회수 자식 프로세스가 남지 않는다.
+        let writer = match pair.master.take_writer() {
+            Ok(w) => w,
+            Err(e) => {
+                Self::reap_child(child).await;
+                return Err(std::io::Error::other(e));
+            }
+        };
         self.inputs
             .lock()
             .unwrap()
             .insert(session_id.to_string(), writer);
 
-        let mut reader = pair
-            .master
-            .try_clone_reader()
-            .map_err(std::io::Error::other)?;
+        let mut reader = match pair.master.try_clone_reader() {
+            Ok(r) => r,
+            Err(e) => {
+                self.inputs.lock().unwrap().remove(session_id);
+                Self::reap_child(child).await;
+                return Err(std::io::Error::other(e));
+            }
+        };
         let app = self.app.clone();
         let sid = session_id.to_string();
         let read_task = tauri::async_runtime::spawn_blocking(move || {
@@ -119,13 +132,23 @@ impl PtyRunner for PortablePtyRunner {
             }
         });
 
-        let status = tauri::async_runtime::spawn_blocking(move || child.wait())
-            .await
-            .map_err(std::io::Error::other)?
-            .map_err(std::io::Error::other)?;
+        let wait_result = tauri::async_runtime::spawn_blocking(move || child.wait()).await;
         let _ = read_task.await;
+        // registry 정리는 wait 성공/실패와 무관하게 항상 수행한다 (좀비 엔트리 방지).
         self.inputs.lock().unwrap().remove(session_id);
         // master는 여기서 drop되며 reader도 EOF로 끝난다
+        let status = wait_result
+            .map_err(std::io::Error::other)?
+            .map_err(std::io::Error::other)?;
         Ok(status.exit_code() as i32)
+    }
+}
+
+impl PortablePtyRunner {
+    /// 조기 반환 경로에서 child를 best-effort로 회수한다: kill 신호를 보낸 뒤
+    /// blocking wait로 좀비 프로세스가 남지 않게 한다. 결과는 정리가 목적이므로 무시한다.
+    async fn reap_child(mut child: Box<dyn portable_pty::Child + Send + Sync>) {
+        let _ = child.kill();
+        let _ = tauri::async_runtime::spawn_blocking(move || child.wait()).await;
     }
 }
