@@ -1,7 +1,6 @@
 import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -13,8 +12,8 @@ function App() {
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <main className="min-h-screen bg-surface-bg dark:bg-surface-bg-dark">
+      <h1 className="text-display font-extrabold text-txt-primary">이지 하네스</h1>
 
       <div className="row">
         <a href="https://vite.dev" target="_blank">
