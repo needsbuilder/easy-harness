@@ -1,5 +1,7 @@
+pub mod events;
 pub mod process;
 pub mod secrets;
+pub mod step_runner;
 
 use crate::recipe::schema::Step;
 use process::ProcessRunner;
