@@ -34,4 +34,14 @@ describe("내 도구", () => {
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     expect(await screen.findByText(/아직 설치한 도구가 없어요/)).toBeInTheDocument();
   });
+
+  it("앱 업데이트 배너는 M2에서 숨겨져 있다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") return { installations: [] };
+      if (cmd === "list_catalog") return [];
+    });
+    render(<MemoryRouter><Dashboard /></MemoryRouter>);
+    await screen.findByText(/아직 설치한 도구가 없어요/);
+    expect(screen.queryByText(/새 버전이 나왔어요/)).not.toBeInTheDocument();
+  });
 });
