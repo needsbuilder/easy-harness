@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { PrimaryButton } from "../components/Buttons";
-import { getAppState, listCatalog, startFlow } from "../lib/ipc";
+import { getAppState, listCatalog, onProgress, startFlow } from "../lib/ipc";
 import type { AppState, CatalogEntry } from "../lib/types";
 
 export function Dashboard() {
   const [state, setState] = useState<AppState | null>(null);
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
+  const [removing, setRemoving] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   // 앱 자체 업데이트 알림 자리. 마일스톤 5에서 tauri-plugin-updater 연동으로 채워진다
@@ -22,9 +23,29 @@ export function Dashboard() {
   const nameOf = (id: string) => catalog.find((c) => c.id === id)?.name ?? id;
 
   const uninstall = async (id: string) => {
+    if (removing.has(id)) return;
     if (!window.confirm(`${nameOf(id)}을(를) 지울까요? 설정과 기록도 함께 정리돼요.`)) return;
-    await startFlow(id, "uninstall", true); // M2: 데모 모드
-    setTimeout(reload, 500);
+    setRemoving((s) => new Set(s).add(id));
+    try {
+      const runId = await startFlow(id, "uninstall", false);
+      const un = await onProgress(runId, (ev) => {
+        if (ev.status.kind === "done") {
+          un();
+          reload();
+          setRemoving((s) => {
+            const n = new Set(s);
+            n.delete(id);
+            return n;
+          });
+        }
+      });
+    } catch {
+      setRemoving((s) => {
+        const n = new Set(s);
+        n.delete(id);
+        return n;
+      });
+    }
   };
 
   if (!state) return null;
@@ -64,10 +85,11 @@ export function Dashboard() {
                 <span className="text-caption font-semibold text-status-success">최신 상태예요</span>
                 <button
                   type="button"
-                  className="text-caption text-txt-tertiary hover:text-status-error"
+                  className="text-caption text-txt-tertiary hover:text-status-error disabled:opacity-50"
+                  disabled={removing.has(i.recipeId)}
                   onClick={() => uninstall(i.recipeId)}
                 >
-                  삭제
+                  {removing.has(i.recipeId) ? "지우는 중" : "삭제"}
                 </button>
               </li>
             ))}

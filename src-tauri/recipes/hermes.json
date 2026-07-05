@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "hermes",
+  "name": "Hermes",
+  "kind": "harness",
+  "easyDescription": "모델 300여 가지를 갈아끼며 쓰는 만능 AI 도우미예요. 애플 실리콘 맥 전용이에요",
+  "pricing": { "label": "무료로 시작", "kind": "freemium" },
+  "supportedModels": [
+    { "modelLabel": "모델 300여 가지 (Claude, GPT, Gemini 포함)", "accountLabel": "Nous Portal 계정(무료 시작 가능)" }
+  ],
+  "recommended": false,
+  "requires": [],
+  "platforms": {
+    "mac": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Hermes가 이미 있는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "hermes version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "Hermes 공식 설치 프로그램을 실행하고 있어요. 필요한 부품도 알아서 챙겨요", "url": "https://hermes-agent.nousresearch.com/install.sh", "file_name": "hermes-install.sh", "command": "/bin/bash", "args": ["{{file}}"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "hermes version"] }
+      ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [
+          { "type": "pty_session", "friendly": "Nous Portal 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "hermes setup --portal"] }
+        ],
+        "guide": [
+          "잠시 뒤 인터넷 창이 자동으로 열려요",
+          "Nous Portal 계정으로 로그인해 주세요. 처음이면 무료로 가입할 수 있어요",
+          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "Hermes 상태를 점검하고 있어요", "command": "/bin/zsh", "args": ["-lc", "hermes doctor"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "Hermes를 새 버전으로 바꾸고 있어요", "command": "/bin/zsh", "args": ["-lc", "hermes update --yes"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "Hermes를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "hermes uninstall --yes"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "rm -f ~/.local/bin/hermes"] }
+      ]
+    },
+    "windows": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Hermes가 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "hermes version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "Hermes 공식 설치 프로그램을 실행하고 있어요. 필요한 부품도 알아서 챙겨요", "url": "https://hermes-agent.nousresearch.com/install.ps1", "file_name": "hermes-install.ps1", "command": "powershell", "args": ["-ExecutionPolicy", "Bypass", "-File", "{{file}}"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "hermes version"] }
+      ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [
+          { "type": "pty_session", "friendly": "Nous Portal 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "hermes setup --portal"] }
+        ],
+        "guide": [
+          "잠시 뒤 인터넷 창이 자동으로 열려요",
+          "Nous Portal 계정으로 로그인해 주세요. 처음이면 무료로 가입할 수 있어요",
+          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "Hermes 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "hermes doctor"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "Hermes를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "hermes update --yes"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "Hermes를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "hermes uninstall --yes"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "hermes uninstall --yes"] }
+      ]
+    }
+  }
+}

@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { AuthGuidePanel } from "../components/AuthGuidePanel";
 import { LogPanel } from "../components/LogPanel";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { MascotBubble } from "../components/MascotBubble";
+import { SecretForm } from "../components/SecretForm";
+import { TerminalPanel } from "../components/TerminalPanel";
 import { WizardStepper } from "../components/WizardStepper";
-import { getDryRun, onLog, onProgress, startFlow } from "../lib/ipc";
+import { getDryRun, onLog, onProgress, provideSecret, startFlow } from "../lib/ipc";
 import { appendLog, initialRunState, runReducer, type RunState } from "../lib/runReducer";
+import type { DryRunAuth } from "../lib/types";
 
 export function Wizard() {
   const { toolId = "" } = useParams();
@@ -14,29 +18,45 @@ export function Wizard() {
   const [toolName, setToolName] = useState(toolId);
   const [showLog, setShowLog] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [auth, setAuth] = useState<DryRunAuth | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
 
-  // 취소 패턴: StrictMode(dev)의 mount→cleanup→mount 이중 호출에서 1차 mount는
-  // cancelled=true를 만난 시점 이후로는 리스너 없이 흘러가고(등록된 구독은 즉시 정리),
-  // 2차(실제) mount만 살아있는 구독을 유지한다. 데모 런(start_flow)이 백엔드에서
-  // 2번 시작될 가능성이 있지만 무해하며, UI는 runId 필터 덕분에 2차 런만 추적한다.
+  // 시작 가드: StrictMode(dev)의 mount→cleanup→mount 이중 호출에서도 같은 컴포넌트
+  // 인스턴스이므로 ref는 유지된다. 같은 key(toolId:attempt)면 이미 만든 시작 promise를
+  // 재사용해 실제 설치(startFlow)가 두 번 시작되지 않는다. 재시도(attempt)나 도구
+  // 변경은 key가 달라져 새로 시작한다. 구독(onProgress/onLog)은 이펙트 인스턴스마다
+  // 다시 붙고, cancelled 가드로 실제로 살아남는 인스턴스만 구독을 유지한다.
+  const startRef = useRef<{ key: string; promise: Promise<{ runId: string; auth: DryRunAuth | null; toolName: string }> } | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     let unProgress: (() => void) | undefined;
     let unLog: (() => void) | undefined;
 
     setState(initialRunState(toolId));
+    const key = `${toolId}:${attempt}`;
+    if (!startRef.current || startRef.current.key !== key) {
+      startRef.current = {
+        key,
+        promise: (async () => {
+          const preview = await getDryRun(toolId);
+          const target = preview.steps.find((s) => s.recipeId === toolId);
+          const newRunId = await startFlow(toolId, "install", false);
+          return { runId: newRunId, auth: preview.auth, toolName: target?.recipeName ?? toolId };
+        })(),
+      };
+    }
     (async () => {
       try {
-        const preview = await getDryRun(toolId);
+        const { runId: newRunId, auth: newAuth, toolName: newToolName } = await startRef.current!.promise;
         if (cancelled) return;
-        const target = preview.steps.find((s) => s.recipeId === toolId);
-        if (target) setToolName(target.recipeName);
-        const runId = await startFlow(toolId, "install", true); // M2: 드라이런 데모 고정
-        if (cancelled) return;
-        const p = await onProgress(runId, (ev) => setState((s) => runReducer(s, ev)));
+        setToolName(newToolName);
+        setAuth(newAuth);
+        setRunId(newRunId);
+        const p = await onProgress(newRunId, (ev) => setState((s) => runReducer(s, ev)));
         if (cancelled) { p(); return; }
         unProgress = p;
-        const l = await onLog(runId, (line) => setState((s) => appendLog(s, line)));
+        const l = await onLog(newRunId, (line) => setState((s) => appendLog(s, line)));
         if (cancelled) { l(); return; }
         unLog = l;
       } catch {
@@ -68,6 +88,23 @@ export function Wizard() {
             onRetry={() => setAttempt((n) => n + 1)}
             onCopyLog={() => navigator.clipboard.writeText(state.logs.join("\n"))}
           />
+        ) : state.terminalSession ? (
+          <>
+            <h1 className="text-display font-extrabold">아래 까만 창에서 로그인을 도와드릴게요</h1>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+              <TerminalPanel sessionId={state.terminalSession} />
+              <AuthGuidePanel guide={auth?.guide ?? []} />
+            </div>
+          </>
+        ) : state.waitingSecret ? (
+          <>
+            <h1 className="text-display font-extrabold">열쇠 하나만 등록하면 돼요</h1>
+            <AuthGuidePanel guide={auth?.guide ?? []} />
+            <SecretForm
+              label={state.waitingSecret}
+              onSubmit={(value) => runId && provideSecret(runId, state.waitingSecret as string, value)}
+            />
+          </>
         ) : (
           <>
             <h1 className="text-display font-extrabold">
@@ -83,6 +120,7 @@ export function Wizard() {
               </button>
             </div>
             <LogPanel lines={state.logs} visible={showLog} />
+            {state.section === "auth" && <AuthGuidePanel guide={auth?.guide ?? []} />}
             <div className="mt-10 flex justify-center">
               <MascotBubble text="제가 근두운 타고 후딱 받아오는 중이에요. 커피 한 잔 하고 오세요!" />
             </div>

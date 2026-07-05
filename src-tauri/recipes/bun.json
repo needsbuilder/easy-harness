@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "bun",
+  "name": "Bun",
+  "kind": "prerequisite",
+  "easyDescription": "가재코드가 움직이는 데 필요한 기본 부품이에요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "supportedModels": [],
+  "recommended": false,
+  "requires": [],
+  "platforms": {
+    "mac": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Bun이 이미 있는지 볼게요", "command": "{{home}}/.bun/bin/bun", "args": ["--version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "Bun 공식 설치 프로그램을 실행하고 있어요", "url": "https://bun.sh/install", "file_name": "bun-install.sh", "command": "/bin/bash", "args": ["{{file}}"] },
+        { "type": "check_command", "friendly": "Bun이 잘 설치됐는지 확인하고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["--version"] }
+      ],
+      "verify": [
+        { "type": "check_command", "friendly": "Bun에게 첫 인사를 시켜 볼게요", "command": "{{home}}/.bun/bin/bun", "args": ["--version"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "Bun을 새 버전으로 바꾸고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["upgrade"] }
+      ],
+      "uninstall": [],
+      "rollback": []
+    },
+    "windows": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Bun이 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "Bun 공식 설치 프로그램을 실행하고 있어요", "url": "https://bun.sh/install.ps1", "file_name": "bun-install.ps1", "command": "powershell", "args": ["-ExecutionPolicy", "Bypass", "-File", "{{file}}"] },
+        { "type": "check_command", "friendly": "Bun이 잘 설치됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"] }
+      ],
+      "verify": [
+        { "type": "check_command", "friendly": "Bun에게 첫 인사를 시켜 볼게요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "Bun을 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" upgrade"] }
+      ],
+      "uninstall": [],
+      "rollback": []
+    }
+  }
+}

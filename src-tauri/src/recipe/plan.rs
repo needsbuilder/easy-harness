@@ -180,7 +180,7 @@ mod tests {
     use crate::recipe::schema::Platform;
 
     fn catalog() -> Catalog {
-        Catalog::load_dir(&Catalog::bundled_dir()).unwrap()
+        Catalog::load_dir(&Catalog::fixture_dir()).unwrap()
     }
 
     #[test]

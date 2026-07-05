@@ -1,6 +1,8 @@
 [package]
 name = "easy-harness"
 version = "0.1.0"
+# sign_recipes 개발용 bin이 추가되면서 cargo run 대상이 모호해짐. 앱 바이너리를 기본으로 지정
+default-run = "easy-harness"
 description = "비개발자를 위한 AI 코딩 도구 설치 도우미, 이지 하네스"
 authors = ["needslab <hello@needslab.ai>"]
 edition = "2021"
@@ -24,6 +26,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["process", "rt", "sync", "time"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+futures-util = "0.3"
+portable-pty = "0.9"
+zip = { version = "8", default-features = false, features = ["deflate"] }
+ed25519-dalek = "2.2"
+base64 = "0.22"
 
 [dev-dependencies]
 tempfile = "3"

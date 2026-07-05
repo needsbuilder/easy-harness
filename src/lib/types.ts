@@ -20,8 +20,13 @@ export interface EnvReport {
 export interface DryRunStep {
   recipeId: string; recipeName: string; section: string; stepType: string; friendly: string;
 }
+export interface DryRunAuth {
+  pattern: "browser_login" | "api_key" | "interactive_terminal";
+  guide: string[];
+}
 export interface DryRunReport {
   targetId: string; platform: string; toolOrder: string[]; steps: DryRunStep[];
+  auth: DryRunAuth | null;
 }
 
 export type StepStatus =
@@ -29,6 +34,7 @@ export type StepStatus =
   | { kind: "succeeded" }
   | { kind: "failed"; message: string }
   | { kind: "waitingSecret"; label: string }
+  | { kind: "terminal"; sessionId: string }
   | { kind: "done"; success: boolean };
 
 export interface ProgressEvent {

@@ -26,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 레시피 서명 개인키 (dev 전용, 절대 커밋 금지)
+recipe-signing-secret.key

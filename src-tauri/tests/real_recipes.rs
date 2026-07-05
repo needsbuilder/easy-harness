@@ -1,0 +1,120 @@
+//! 실물 레시피 전수 스펙 테스트. 각 레시피 태스크가 아래에 자기 검증을 추가한다.
+use easy_harness_lib::recipe::loader::Catalog;
+use easy_harness_lib::recipe::plan::{build_plan, Flow};
+use easy_harness_lib::recipe::schema::{Platform, ToolKind};
+
+fn catalog() -> Catalog {
+    Catalog::load_dir(&Catalog::bundled_dir()).unwrap()
+}
+
+#[test]
+fn prerequisite_recipes_exist_on_both_platforms() {
+    let cat = catalog();
+    for id in ["nodejs-lts", "bun"] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        assert_eq!(r.kind, ToolKind::Prerequisite, "{id}");
+        for p in [Platform::Mac, Platform::Windows] {
+            let spec = r
+                .platforms
+                .get(p)
+                .unwrap_or_else(|| panic!("{id} {p:?} 섹션 없음"));
+            assert!(!spec.detect.is_empty(), "{id} {p:?}: detect 필요");
+            assert!(!spec.install.is_empty(), "{id} {p:?}: install 필요");
+            assert!(spec.auth.is_none(), "{id} {p:?}: 준비물엔 auth 없음");
+        }
+    }
+}
+
+#[test]
+fn claude_code_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("claude-code").expect("claude-code 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    assert!(r.recommended);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("auth 필요");
+        assert_eq!(auth.guide.len(), 3);
+        assert!(!spec.verify.is_empty());
+        assert!(!spec.uninstall.is_empty());
+    }
+    // 준비물 없이 단독 설치 (네이티브 인스톨러라 Node 불필요)
+    let plan = build_plan(&cat, "claude-code", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["claude-code"]);
+}
+
+#[test]
+fn codex_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("codex").expect("codex 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("auth 필요");
+        assert_eq!(auth.guide.len(), 3);
+        assert!(!spec.verify.is_empty());
+    }
+    let plan = build_plan(&cat, "codex", Platform::Windows, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["codex"]);
+}
+
+#[test]
+fn gajaecode_recipe_pulls_bun_first() {
+    let cat = catalog();
+    let r = cat.get("gajaecode").expect("gajaecode 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "gajaecode", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["bun", "gajaecode"]);
+    let plan_installed = build_plan(
+        &cat,
+        "gajaecode",
+        Platform::Mac,
+        Flow::Install,
+        &["bun".into()],
+    )
+    .unwrap();
+    assert_eq!(plan_installed.tool_order, vec!["gajaecode"]);
+}
+
+#[test]
+fn openclaw_recipe_pulls_node_first() {
+    let cat = catalog();
+    let r = cat.get("openclaw").expect("openclaw 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "openclaw", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["nodejs-lts", "openclaw"]);
+}
+
+#[test]
+fn hermes_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("hermes").expect("hermes 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "hermes", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["hermes"]); // 준비물은 설치 스크립트가 자동 해결
+    let mac = r.platforms.get(Platform::Mac).unwrap();
+    assert_eq!(
+        mac.auth.as_ref().unwrap().pattern,
+        easy_harness_lib::recipe::schema::AuthPattern::BrowserLogin
+    );
+}
+
+#[test]
+fn opencode_recipe_spec_and_catalog_is_complete() {
+    let cat = catalog();
+    let r = cat.get("opencode").expect("opencode 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    // windows만 npm 경로라 Node 준비물이 붙는다
+    let win = build_plan(&cat, "opencode", Platform::Windows, Flow::Install, &[]).unwrap();
+    assert_eq!(win.tool_order, vec!["nodejs-lts", "opencode"]);
+    let mac = build_plan(&cat, "opencode", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(mac.tool_order, vec!["opencode"]);
+    // M3 카탈로그 마감: 하네스 6 + 준비물 2
+    assert_eq!(cat.recipes.len(), 8);
+    let harnesses = cat
+        .recipes
+        .iter()
+        .filter(|r| r.kind == ToolKind::Harness)
+        .count();
+    assert_eq!(harnesses, 6);
+}

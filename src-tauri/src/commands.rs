@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
@@ -15,6 +16,7 @@ use crate::recipe::schema::{Platform, ToolKind};
 use crate::runner::dry_run::{dry_run, DryRunReport};
 use crate::runner::events::{ProgressEmitter, ProgressEvent, StepStatus};
 use crate::runner::process::TokioProcessRunner;
+use crate::runner::pty::{PortablePtyRunner, PtyInputRegistry};
 use crate::runner::secrets::SecretVault;
 use crate::runner::step_runner::{run_plan, RunDeps};
 use crate::runner::UrlOpener;
@@ -26,6 +28,8 @@ pub struct AppContext {
     pub store: StateStore,
     pub runs: Mutex<HashMap<String, mpsc::Sender<(String, String)>>>,
     pub run_seq: AtomicU64,
+    pub pty_inputs: PtyInputRegistry,
+    pub run_logs: Mutex<HashMap<String, Vec<String>>>,
 }
 
 impl AppContext {
@@ -112,6 +116,15 @@ impl ProgressEmitter for TauriEmitter {
         let _ = self.app.emit("install://progress", ev);
     }
     fn log(&self, run_id: &str, line: &str) {
+        if let Some(ctx) = self.app.try_state::<AppContext>() {
+            let mut logs = ctx.run_logs.lock().unwrap();
+            let entry = logs.entry(run_id.to_string()).or_default();
+            entry.push(line.to_string());
+            let len = entry.len();
+            if len > 2000 {
+                entry.drain(0..len - 2000);
+            }
+        }
         let _ = self.app.emit(
             "install://log",
             &LogPayload {
@@ -177,6 +190,48 @@ pub fn provide_secret(
 }
 
 #[tauri::command]
+pub fn pty_input(
+    session_id: String,
+    data: String,
+    ctx: State<'_, AppContext>,
+) -> Result<(), String> {
+    let mut inputs = ctx.pty_inputs.lock().unwrap();
+    let writer = inputs
+        .get_mut(&session_id)
+        .ok_or_else(|| "터미널 세션을 찾지 못했어요".to_string())?;
+    writer
+        .write_all(data.as_bytes())
+        .and_then(|_| writer.flush())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn export_diagnostics(
+    app: AppHandle,
+    ctx: State<'_, AppContext>,
+) -> Result<String, String> {
+    let env = probe_env(&TokioProcessRunner).await;
+    let env_json = serde_json::to_string_pretty(&env).map_err(|e| e.to_string())?;
+    let state_json = serde_json::to_string_pretty(&ctx.store.load()).map_err(|e| e.to_string())?;
+    let logs: Vec<(String, Vec<String>)> = ctx
+        .run_logs
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    let dir = app.path().download_dir().map_err(|e| e.to_string())?;
+    let dest = dir.join(format!(
+        "easy-harness-diagnostics-{}.zip",
+        crate::state::now_unix()
+    ));
+    crate::runner::diagnostics::build_zip(&dest, &env_json, &state_json, &logs)
+        .map_err(|e| e.to_string())?;
+    let _ = app.opener().reveal_item_in_dir(&dest);
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
 pub fn start_flow(
     tool_id: String,
     flow: String,
@@ -207,6 +262,7 @@ pub fn start_flow(
     let catalog = ctx.catalog.clone();
     let store_path = ctx.store_path();
     let id_for_task = run_id.clone();
+    let ctx_inputs = ctx.pty_inputs.clone();
     tauri::async_runtime::spawn(async move {
         let emitter = TauriEmitter { app: app.clone() };
         let success = if demo {
@@ -214,10 +270,17 @@ pub fn start_flow(
         } else {
             let process = TokioProcessRunner;
             let opener = PluginUrlOpener { app: app.clone() };
+            let downloader = crate::runner::download::ReqwestDownloader;
+            let pty = PortablePtyRunner {
+                app: app.clone(),
+                inputs: ctx_inputs.clone(),
+            };
             let deps = RunDeps {
                 process: &process,
                 emitter: &emitter,
                 opener: &opener,
+                downloader: &downloader,
+                pty: &pty,
                 vault: SecretVault::new(),
             };
             run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx)
@@ -307,7 +370,7 @@ mod tests {
 
     #[test]
     fn catalog_entries_carry_install_state_and_missing_requires() {
-        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
         let state = AppState {
             installations: vec![Installation {
                 recipe_id: "mock-prereq".into(),

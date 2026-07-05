@@ -1,21 +1,21 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 3 구현 계획 작성 완료** (2026-07-05): `docs/superpowers/plans/2026-07-05-easy-harness-m3-real-recipes.md` (20개 태스크)
-- 하네스 6종 설치·인증·모델 정보는 멀티에이전트 워크플로우(리서치 6 + 교차 검증 6 + 크레이트 1 + Node LTS 1)로 **2026-07-05 라이브 검증 완료, 전 항목 confidence high**. 결과는 계획서에 박제됨 (구현 중 재검증 불필요)
-- 계획 자기 리뷰 통과: 플레이스홀더 0, 레시피 JSON 8종 기계 검증 OK
+- **마일스톤 3 구현 완료, 머지 대기** (2026-07-05, 브랜치 feature/m3-real-recipes, 27+커밋)
+- 태스크 20개 전부 구현·태스크별 리뷰 통과 (픽스 6건 반영). 최종 전체 리뷰(opus) 판정: **Ready to merge = Yes** (Critical 0, 코드 Important 0)
+- 게이트: cargo 53+7 · vitest 30 · clippy/fmt 클린 · build OK. 부팅 스모크 3회 통과 (레시피 8종 로딩, 원격 404 폴백 정상)
+- 산출: 하네스 6종 + 준비물 2종 실물 레시피, download_run(reqwest 0.13), PTY(portable-pty 0.9 + xterm 6), 인증 UI(가이드·비밀값 폼), 실모드 전환, 진단 zip, ed25519 서명 검증(verify_strict) + 원격 갱신(다운그레이드 방지)
 
 ## 다음 스텝
-1. **M3 계획 실행** — 실행 방식 사용자 선택 대기: 서브에이전트 주도(권장) vs 인라인(executing-plans)
-2. 실행 완료 후: 서명 개인키(`recipe-signing-secret.key`) 형에게 안전 보관 전달, 레시피 원격 저장소(`needslab-ai/easy-harness-recipes`) 생성은 M5
-3. GitHub 리모트 여전히 미등록 (CI 실행하려면 필요)
+1. **사용자 결정: 머지 방식** (finishing-a-development-branch) + 실설치 GUI 스모크는 실제 시스템을 바꾸므로 사용자 판단하에 실행
+2. **운영 액션 (릴리스 전 필수)**: 서명 개인키 `src-tauri/recipe-signing-secret.key`(비커밋, 로컬 단일본)를 안전한 곳에 백업. 분실 시 원격 레시피 갱신 기능 영구 불능
+3. M4(플러그인 5종 레시피) 이월 백로그: api_key 실사용 시 provideSecret 피드백+SecretForm 초기화 · PTY reader UTF-8 버퍼링+워치독 · Catalog listen 가드 · run_logs 정리 · reqwest 타임아웃+부분파일 정리 · stderr 패턴 매칭 에러 안내 · Dashboard done 이벤트 유실 시 "지우는 중" 고정(N1)
+4. GitHub 리모트 미등록 (CI 실행하려면 필요) · 레시피 원격 저장소(needslab-ai/easy-harness-recipes) 생성은 M5
 
-## 핵심 결정/주의 (M3 계획, 라이브 검증 근거)
-- 공용 준비물 = **Node.js LTS v24.18.0 + Bun** 2종 (git 제외: 어느 하네스도 필수 아님. GajaeCode가 Bun >= 1.3.14 요구가 핵심 발견)
-- 6종 모두 공식 설치 스크립트/Bun 설치가 기본, 인증은 전부 대화형 터미널 또는 브라우저 OAuth. api_key 패턴(SecretForm)은 엔진·UI만 완비, 실사용은 M4 플러그인부터
-- 크레이트 확정: reqwest 0.13(rustls 기본) · **portable-pty 0.9 채택**(tauri-plugin-pty 0.3.0은 초기 단계라 배제) · ed25519-dalek 2.2 stable(`verify_strict` 필수, 3.0은 아직 rc) · zip 8 · @xterm/xterm 6.0.0
-- 엔진 추가 결정: `{{home}}` 치환, **윈도우 PATH 신선화**(레지스트리 재읽기, 설치 직후 명령 탐색), mac 스텝은 `/bin/zsh -lc` 래핑
-- Auth.tsx 단독 화면은 삭제하고 마법사에 통합. Windows 경로 실검증은 M6 VM 스모크(어긋나면 레시피 원격 갱신으로 수정)
-- stderr 패턴 매칭 맞춤 에러 안내는 M3 범위 밖 (M4+ 백로그)
-- 브랜드 규칙 유지: 골드 주 색, 카피 em dash·이모지 금지 (계획 Task 5가 기계 검사를 name·설명·가이드까지 확장)
-- 이벤트 채널: 기존 "install://progress"·"install://log" + 신규 "pty://data"·"catalog://updated". TS 미러는 src/lib/types.ts 단일 소스
+## 핵심 결정/주의
+- 공용 준비물 = Node.js LTS v24.18.0 + Bun (git 제외). GajaeCode는 Bun >= 1.3.14 요구
+- 인증: 6종 모두 대화형 터미널/브라우저 OAuth. api_key 패턴은 엔진·UI 완비, 실사용 M4부터
+- 엔진: {{home}} 치환 · 윈도우 PATH 신선화(레지스트리 재읽기, CI 윈도우 매트릭스가 실검증) · mac 스텝 /bin/zsh -lc 래핑 · 원격 캐시는 로딩마다 재검증 + 버전 단조성
+- 정정 반영: reqwest feature는 rustls(0.13에서 개명) · tauri resources는 디렉터리 패턴 · Cargo default-run=easy-harness (sign_recipes bin 모호성)
+- Windows 실검증은 M6 VM 스모크. 어긋나면 레시피 원격 갱신으로 수정 (앱 릴리스 불필요)
+- SDD 실행 기록: .superpowers/sdd/progress.md (gitignored) · 계획: docs/superpowers/plans/2026-07-05-easy-harness-m3-real-recipes.md
