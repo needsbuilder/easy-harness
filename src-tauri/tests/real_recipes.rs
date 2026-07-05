@@ -21,3 +21,21 @@ fn prerequisite_recipes_exist_on_both_platforms() {
         }
     }
 }
+
+#[test]
+fn claude_code_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("claude-code").expect("claude-code 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    assert!(r.recommended);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("auth 필요");
+        assert_eq!(auth.guide.len(), 3);
+        assert!(!spec.verify.is_empty());
+        assert!(!spec.uninstall.is_empty());
+    }
+    // 준비물 없이 단독 설치 (네이티브 인스톨러라 Node 불필요)
+    let plan = build_plan(&cat, "claude-code", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["claude-code"]);
+}
