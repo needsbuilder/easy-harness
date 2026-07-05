@@ -39,3 +39,18 @@ fn claude_code_recipe_spec() {
     let plan = build_plan(&cat, "claude-code", Platform::Mac, Flow::Install, &[]).unwrap();
     assert_eq!(plan.tool_order, vec!["claude-code"]);
 }
+
+#[test]
+fn codex_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("codex").expect("codex 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("auth 필요");
+        assert_eq!(auth.guide.len(), 3);
+        assert!(!spec.verify.is_empty());
+    }
+    let plan = build_plan(&cat, "codex", Platform::Windows, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["codex"]);
+}
