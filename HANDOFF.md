@@ -1,11 +1,11 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 1 (브랜드·UI 디자인) 완료.** 브랜치 `feature/brand-design`에서 작업, 통합 대기.
+- **마일스톤 1 (브랜드·UI 디자인) 완료, main에 머지됨.**
 - 산출물 전부 사용자 승인 완료. 인덱스: `design/README.md`
 
 ## 다음 스텝
-1. `feature/brand-design` → main 통합 (finishing-a-development-branch 진행 중)
+1. (완료) feature/brand-design → main 머지
 2. **마일스톤 2 계획 작성** (writing-plans): Tauri 2 앱 뼈대 + 레시피 엔진 + 스텝 러너 + 드라이런. 입력: `design/README.md`의 자산·토큰
 3. 마일스톤 3~4: 레시피 (하네스 6종 / 오픈소스·플러그인 5종, 지원 모델 라이브 검증)
 
