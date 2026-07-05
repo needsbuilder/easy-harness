@@ -29,6 +29,7 @@ pub struct AppContext {
     pub runs: Mutex<HashMap<String, mpsc::Sender<(String, String)>>>,
     pub run_seq: AtomicU64,
     pub pty_inputs: PtyInputRegistry,
+    pub pty_masters: crate::runner::pty::PtyMasterRegistry,
     pub run_logs: Mutex<HashMap<String, Vec<String>>>,
 }
 
@@ -206,6 +207,18 @@ pub fn pty_input(
 }
 
 #[tauri::command]
+pub fn pty_resize(session_id: String, cols: u16, rows: u16, ctx: State<'_, AppContext>) {
+    // 프런트 fit 결과가 비정상 값이어도 PTY가 망가지지 않게 방어적으로 자른다.
+    // 세션이 이미 끝났으면 false가 돌아오지만 에러는 아니다 (fit과 종료의 경쟁).
+    let _ = crate::runner::pty::resize_master(
+        &ctx.pty_masters,
+        &session_id,
+        cols.clamp(20, 500),
+        rows.clamp(5, 200),
+    );
+}
+
+#[tauri::command]
 pub async fn export_diagnostics(
     app: AppHandle,
     ctx: State<'_, AppContext>,
@@ -263,6 +276,7 @@ pub fn start_flow(
     let store_path = ctx.store_path();
     let id_for_task = run_id.clone();
     let ctx_inputs = ctx.pty_inputs.clone();
+    let ctx_masters = ctx.pty_masters.clone();
     tauri::async_runtime::spawn(async move {
         let emitter = TauriEmitter { app: app.clone() };
         let success = if demo {
@@ -274,6 +288,7 @@ pub fn start_flow(
             let pty = PortablePtyRunner {
                 app: app.clone(),
                 inputs: ctx_inputs.clone(),
+                masters: ctx_masters.clone(),
             };
             let deps = RunDeps {
                 process: &process,
