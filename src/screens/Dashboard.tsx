@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { PrimaryButton } from "../components/Buttons";
-import { getAppState, listCatalog, startFlow } from "../lib/ipc";
+import { getAppState, listCatalog, onProgress, startFlow } from "../lib/ipc";
 import type { AppState, CatalogEntry } from "../lib/types";
 
 export function Dashboard() {
@@ -23,8 +23,13 @@ export function Dashboard() {
 
   const uninstall = async (id: string) => {
     if (!window.confirm(`${nameOf(id)}을(를) 지울까요? 설정과 기록도 함께 정리돼요.`)) return;
-    await startFlow(id, "uninstall", true); // M2: 데모 모드
-    setTimeout(reload, 500);
+    const runId = await startFlow(id, "uninstall", false);
+    const un = await onProgress(runId, (ev) => {
+      if (ev.status.kind === "done") {
+        un();
+        reload();
+      }
+    });
   };
 
   if (!state) return null;

@@ -63,6 +63,26 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
     expect(vi.mocked(ipc.onLog).mock.calls.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("실모드로 한 번만 시작한다 (StrictMode 이중 마운트 가드)", async () => {
+    vi.mocked(ipc.getDryRun).mockResolvedValue(dryRun);
+    vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
+    vi.mocked(ipc.onProgress).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={["/wizard/mock-tool"]}>
+          <Routes>
+            <Route path="/wizard/:toolId" element={<Wizard />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    await waitFor(() => expect(ipc.startFlow).toHaveBeenCalled());
+    expect(vi.mocked(ipc.startFlow)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(ipc.startFlow)).toHaveBeenCalledWith("mock-tool", "install", false);
+  });
+
   it("waitingSecret에서 비밀값 폼을 띄우고 제출을 provideSecret으로 잇는다", async () => {
     let fireProgress: ((ev: ProgressEvent) => void) | undefined;
     vi.mocked(ipc.getDryRun).mockResolvedValue({
