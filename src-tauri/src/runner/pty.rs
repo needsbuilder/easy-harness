@@ -5,6 +5,25 @@ use std::sync::{Arc, Mutex};
 /// 세션별 PTY 입력 쓰기 핸들 (pty_input 커맨드가 사용)
 pub type PtyInputRegistry = Arc<Mutex<HashMap<String, Box<dyn Write + Send>>>>;
 
+/// 세션별 PTY master 핸들 (pty_resize 커맨드가 사용)
+pub type PtyMasterRegistry = Arc<Mutex<HashMap<String, Box<dyn portable_pty::MasterPty + Send>>>>;
+
+/// 등록된 세션의 PTY를 지정 크기로 바꾼다. 세션이 없으면(이미 종료 등) false.
+/// 프런트 fit은 세션 종료와 경쟁할 수 있으므로 없는 세션은 에러가 아니라 무시 대상이다.
+pub fn resize_master(masters: &PtyMasterRegistry, session_id: &str, cols: u16, rows: u16) -> bool {
+    match masters.lock().unwrap().get(session_id) {
+        Some(m) => m
+            .resize(PtySize {
+                rows,
+                cols,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .is_ok(),
+        None => false,
+    }
+}
+
 pub trait PtyRunner: Send + Sync {
     /// PTY에서 command를 실행하고 종료 코드를 돌려준다.
     /// 실행 중 출력은 구현체가 이벤트로 스트리밍한다.
@@ -64,15 +83,18 @@ struct PtyDataPayload {
 pub struct PortablePtyRunner {
     pub app: AppHandle,
     pub inputs: PtyInputRegistry,
+    pub masters: PtyMasterRegistry,
 }
 
 impl PtyRunner for PortablePtyRunner {
     async fn run(&self, session_id: &str, command: &str, args: &[String]) -> std::io::Result<i32> {
         let pty_system = native_pty_system();
+        // 초기 크기는 보수적인 80x24. 프런트 TerminalPanel이 마운트 직후 fit 결과로
+        // pty_resize를 보내 실제 패널 크기로 맞춘다 (그 전에 나온 출력은 80칸 래핑).
         let pair = pty_system
             .openpty(PtySize {
-                rows: 30,
-                cols: 100,
+                rows: 24,
+                cols: 80,
                 pixel_width: 0,
                 pixel_height: 0,
             })
@@ -112,6 +134,10 @@ impl PtyRunner for PortablePtyRunner {
                 return Err(std::io::Error::other(e));
             }
         };
+        self.masters
+            .lock()
+            .unwrap()
+            .insert(session_id.to_string(), pair.master);
         let app = self.app.clone();
         let sid = session_id.to_string();
         let read_task = tauri::async_runtime::spawn_blocking(move || {
@@ -136,7 +162,8 @@ impl PtyRunner for PortablePtyRunner {
         let _ = read_task.await;
         // registry 정리는 wait 성공/실패와 무관하게 항상 수행한다 (좀비 엔트리 방지).
         self.inputs.lock().unwrap().remove(session_id);
-        // master는 여기서 drop되며 reader도 EOF로 끝난다
+        // master는 registry에서 빠지며 여기서 drop되고 reader도 EOF로 끝난다
+        self.masters.lock().unwrap().remove(session_id);
         let status = wait_result
             .map_err(std::io::Error::other)?
             .map_err(std::io::Error::other)?;
@@ -150,5 +177,33 @@ impl PortablePtyRunner {
     async fn reap_child(mut child: Box<dyn portable_pty::Child + Send + Sync>) {
         let _ = child.kill();
         let _ = tauri::async_runtime::spawn_blocking(move || child.wait()).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resize_master_missing_session_returns_false() {
+        let reg: PtyMasterRegistry = Default::default();
+        assert!(!resize_master(&reg, "없는-세션", 80, 24));
+    }
+
+    #[test]
+    fn resize_master_resizes_live_master() {
+        let pair = native_pty_system()
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .unwrap();
+        let reg: PtyMasterRegistry = Default::default();
+        reg.lock().unwrap().insert("s".into(), pair.master);
+        assert!(resize_master(&reg, "s", 120, 40));
+        let size = reg.lock().unwrap().get("s").unwrap().get_size().unwrap();
+        assert_eq!((size.cols, size.rows), (120, 40));
     }
 }

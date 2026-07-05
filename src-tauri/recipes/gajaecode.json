@@ -23,14 +23,14 @@
         { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "{{home}}/.bun/bin/gjc", "args": ["--version"] }
       ],
       "auth": {
-        "pattern": "browser_login",
+        "pattern": "automatic",
         "steps": [
-          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "{{home}}/.bun/bin/gjc auth-broker login anthropic"] }
+          { "type": "run_command", "friendly": "쓰던 AI 계정을 가재코드에 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "{{home}}/.bun/bin/gjc setup credentials --yes"] }
         ],
         "guide": [
-          "잠시 뒤 인터넷 창이 자동으로 열려요",
-          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+          "이 컴퓨터에서 이미 로그인된 AI 계정(Claude 등)을 찾아서 가재코드에 그대로 연결해요",
+          "새로 로그인하거나 입력할 건 하나도 없어요",
+          "연결이 끝나면 알아서 다음으로 넘어가요"
         ]
       },
       "verify": [
@@ -56,14 +56,14 @@
         { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" --version"] }
       ],
       "auth": {
-        "pattern": "browser_login",
+        "pattern": "automatic",
         "steps": [
-          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" auth-broker login anthropic"] }
+          { "type": "run_command", "friendly": "쓰던 AI 계정을 가재코드에 연결하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" setup credentials --yes"] }
         ],
         "guide": [
-          "잠시 뒤 인터넷 창이 자동으로 열려요",
-          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+          "이 컴퓨터에서 이미 로그인된 AI 계정(Claude 등)을 찾아서 가재코드에 그대로 연결해요",
+          "새로 로그인하거나 입력할 건 하나도 없어요",
+          "연결이 끝나면 알아서 다음으로 넘어가요"
         ]
       },
       "verify": [

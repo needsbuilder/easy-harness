@@ -45,6 +45,7 @@ pub fn run() {
                 runs: Mutex::new(HashMap::new()),
                 run_seq: AtomicU64::new(1),
                 pty_inputs: std::sync::Arc::new(Mutex::new(HashMap::new())),
+                pty_masters: std::sync::Arc::new(Mutex::new(HashMap::new())),
                 run_logs: Mutex::new(HashMap::new()),
             });
 
@@ -70,6 +71,7 @@ pub fn run() {
             commands::provide_secret,
             commands::start_flow,
             commands::pty_input,
+            commands::pty_resize,
             commands::export_diagnostics,
         ])
         .run(tauri::generate_context!())
