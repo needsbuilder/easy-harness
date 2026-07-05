@@ -1,10 +1,10 @@
 import { StrictMode } from "react";
-import { render, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { Wizard } from "../Wizard";
 import * as ipc from "../../lib/ipc";
-import type { DryRunReport } from "../../lib/types";
+import type { DryRunReport, ProgressEvent } from "../../lib/types";
 
 vi.mock("../../lib/ipc");
 
@@ -15,6 +15,7 @@ const dryRun: DryRunReport = {
   steps: [
     { recipeId: "mock-tool", recipeName: "모의 도구", section: "install", stepType: "run", friendly: "설치 중" },
   ],
+  auth: null,
 };
 
 describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
@@ -60,5 +61,40 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
     });
     expect(vi.mocked(ipc.onProgress).mock.calls.length).toBeGreaterThanOrEqual(1);
     expect(vi.mocked(ipc.onLog).mock.calls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("waitingSecret에서 비밀값 폼을 띄우고 제출을 provideSecret으로 잇는다", async () => {
+    let fireProgress: ((ev: ProgressEvent) => void) | undefined;
+    vi.mocked(ipc.getDryRun).mockResolvedValue({
+      ...dryRun,
+      auth: { pattern: "api_key", guide: ["발급 페이지에서 열쇠를 복사하세요"] },
+    });
+    vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
+    vi.mocked(ipc.onProgress).mockImplementation(async (_runId, cb) => {
+      fireProgress = cb;
+      return vi.fn(() => {});
+    });
+    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.provideSecret).mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={["/wizard/mock-tool"]}>
+        <Routes>
+          <Route path="/wizard/:toolId" element={<Wizard />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(fireProgress).toBeDefined());
+    act(() =>
+      fireProgress!({
+        runId: "run-1", recipeId: "mock-tool", recipeName: "모의 도구", section: "auth",
+        stepIndex: 0, totalSteps: 2, friendly: "열쇠를 넣어 주세요",
+        status: { kind: "waitingSecret", label: "api_key" },
+      }),
+    );
+    const input = await screen.findByLabelText(/열쇠 값/);
+    fireEvent.change(input, { target: { value: "sk-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "등록하기" }));
+    expect(ipc.provideSecret).toHaveBeenCalledWith("run-1", "api_key", "sk-1");
   });
 });
