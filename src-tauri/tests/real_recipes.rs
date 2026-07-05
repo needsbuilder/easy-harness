@@ -85,3 +85,19 @@ fn hermes_recipe_spec() {
     let mac = r.platforms.get(Platform::Mac).unwrap();
     assert_eq!(mac.auth.as_ref().unwrap().pattern, easy_harness_lib::recipe::schema::AuthPattern::BrowserLogin);
 }
+
+#[test]
+fn opencode_recipe_spec_and_catalog_is_complete() {
+    let cat = catalog();
+    let r = cat.get("opencode").expect("opencode 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    // windows만 npm 경로라 Node 준비물이 붙는다
+    let win = build_plan(&cat, "opencode", Platform::Windows, Flow::Install, &[]).unwrap();
+    assert_eq!(win.tool_order, vec!["nodejs-lts", "opencode"]);
+    let mac = build_plan(&cat, "opencode", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(mac.tool_order, vec!["opencode"]);
+    // M3 카탈로그 마감: 하네스 6 + 준비물 2
+    assert_eq!(cat.recipes.len(), 8);
+    let harnesses = cat.recipes.iter().filter(|r| r.kind == ToolKind::Harness).count();
+    assert_eq!(harnesses, 6);
+}
