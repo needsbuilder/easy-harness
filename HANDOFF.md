@@ -1,13 +1,13 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 3 구현 완료, 머지 대기** (2026-07-05, 브랜치 feature/m3-real-recipes, 27+커밋)
+- **마일스톤 3 완료, main에 머지됨** (머지 커밋 47c4063, 2026-07-06). 머지 후 main에서 cargo 53+7 + vitest 30 재확인 GREEN, 브랜치 삭제됨
 - 태스크 20개 전부 구현·태스크별 리뷰 통과 (픽스 6건 반영). 최종 전체 리뷰(opus) 판정: **Ready to merge = Yes** (Critical 0, 코드 Important 0)
 - 게이트: cargo 53+7 · vitest 30 · clippy/fmt 클린 · build OK. 부팅 스모크 3회 통과 (레시피 8종 로딩, 원격 404 폴백 정상)
 - 산출: 하네스 6종 + 준비물 2종 실물 레시피, download_run(reqwest 0.13), PTY(portable-pty 0.9 + xterm 6), 인증 UI(가이드·비밀값 폼), 실모드 전환, 진단 zip, ed25519 서명 검증(verify_strict) + 원격 갱신(다운그레이드 방지)
 
 ## 다음 스텝
-1. **사용자 결정: 머지 방식** (finishing-a-development-branch) + 실설치 GUI 스모크는 실제 시스템을 바꾸므로 사용자 판단하에 실행
+1. **실설치 GUI 스모크** (사용자 판단하에): tauri dev에서 도구 하나(예: Codex) 실제 설치+로그인+verify 관통. 실제 시스템이 바뀌는 동작
 2. **운영 액션 (릴리스 전 필수)**: 서명 개인키 `src-tauri/recipe-signing-secret.key`(비커밋, 로컬 단일본)를 안전한 곳에 백업. 분실 시 원격 레시피 갱신 기능 영구 불능
 3. M4(플러그인 5종 레시피) 이월 백로그: api_key 실사용 시 provideSecret 피드백+SecretForm 초기화 · PTY reader UTF-8 버퍼링+워치독 · Catalog listen 가드 · run_logs 정리 · reqwest 타임아웃+부분파일 정리 · stderr 패턴 매칭 에러 안내 · Dashboard done 이벤트 유실 시 "지우는 중" 고정(N1)
 4. GitHub 리모트 미등록 (CI 실행하려면 필요) · 레시피 원격 저장소(needslab-ai/easy-harness-recipes) 생성은 M5
