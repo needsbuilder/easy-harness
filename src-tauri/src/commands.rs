@@ -1,0 +1,277 @@
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
+
+use serde::Serialize;
+use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_opener::OpenerExt;
+use tokio::sync::mpsc;
+
+use crate::error::EngineError;
+use crate::probe::{probe_env, EnvReport};
+use crate::recipe::loader::Catalog;
+use crate::recipe::plan::{build_plan, Flow};
+use crate::recipe::schema::{Platform, ToolKind};
+use crate::runner::dry_run::{dry_run, DryRunReport};
+use crate::runner::events::{ProgressEmitter, ProgressEvent, StepStatus};
+use crate::runner::process::TokioProcessRunner;
+use crate::runner::secrets::SecretVault;
+use crate::runner::step_runner::{run_plan, RunDeps};
+use crate::runner::UrlOpener;
+use crate::state::{now_unix, AppState, Installation, StateStore};
+
+/// 앱 전역 상태 (lib.rs에서 .manage()로 등록)
+pub struct AppContext {
+    pub catalog: Catalog,
+    pub store: StateStore,
+    pub runs: Mutex<HashMap<String, mpsc::Sender<(String, String)>>>,
+    pub run_seq: AtomicU64,
+}
+
+impl AppContext {
+    pub fn store_path(&self) -> std::path::PathBuf {
+        self.store.path().to_path_buf()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogEntry {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub easy_description: String,
+    pub pricing: crate::recipe::schema::Pricing,
+    pub supported_models: Vec<crate::recipe::schema::ModelBadge>,
+    pub recommended: bool,
+    pub requires: Vec<String>,
+    pub installed: bool,
+    pub installed_version: Option<String>,
+    pub missing_requires: Vec<String>,
+}
+
+pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEntry> {
+    let installed_ids: Vec<&str> = state.installations.iter().map(|i| i.recipe_id.as_str()).collect();
+    catalog.recipes.iter().map(|r| {
+        let installation = state.installations.iter().find(|i| i.recipe_id == r.id);
+        CatalogEntry {
+            id: r.id.clone(),
+            name: r.name.clone(),
+            kind: match r.kind {
+                ToolKind::Harness => "harness", ToolKind::Plugin => "plugin",
+                ToolKind::Prerequisite => "prerequisite",
+            }.to_string(),
+            easy_description: r.easy_description.clone(),
+            pricing: r.pricing.clone(),
+            supported_models: r.supported_models.clone(),
+            recommended: r.recommended,
+            requires: r.requires.clone(),
+            installed: installation.is_some(),
+            installed_version: installation.and_then(|i| i.version.clone()),
+            missing_requires: r.requires.iter()
+                .filter(|id| !installed_ids.contains(&id.as_str()))
+                .cloned().collect(),
+        }
+    }).collect()
+}
+
+fn current_platform() -> Result<Platform, String> {
+    Platform::current().ok_or_else(|| "지원하지 않는 운영체제예요".to_string())
+}
+
+fn err_str(e: EngineError) -> String { e.to_string() }
+
+struct TauriEmitter { app: AppHandle }
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LogPayload { run_id: String, line: String }
+
+impl ProgressEmitter for TauriEmitter {
+    fn progress(&self, ev: &ProgressEvent) {
+        let _ = self.app.emit("install://progress", ev);
+    }
+    fn log(&self, run_id: &str, line: &str) {
+        let _ = self.app.emit("install://log", &LogPayload {
+            run_id: run_id.to_string(), line: line.to_string(),
+        });
+    }
+}
+
+struct PluginUrlOpener { app: AppHandle }
+
+impl UrlOpener for PluginUrlOpener {
+    fn open(&self, url: &str) -> Result<(), String> {
+        // 프론트 권한 체계(capabilities)는 안 타지만, 백엔드 네이티브 코드라
+        // opener 플러그인 인스턴스(self.app.opener())로 여는 것과 동작 동일.
+        // 필드를 실제로 사용해 dead_code 경고도 해결.
+        self.app.opener().open_url(url, None::<String>).map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn get_env_report() -> EnvReport {
+    probe_env(&TokioProcessRunner).await
+}
+
+#[tauri::command]
+pub fn list_catalog(ctx: State<'_, AppContext>) -> Vec<CatalogEntry> {
+    to_catalog_entries(&ctx.catalog, &ctx.store.load())
+}
+
+#[tauri::command]
+pub fn get_dry_run(tool_id: String, ctx: State<'_, AppContext>) -> Result<DryRunReport, String> {
+    let platform = current_platform()?;
+    dry_run(&ctx.catalog, &tool_id, platform).map_err(err_str)
+}
+
+#[tauri::command]
+pub fn get_app_state(ctx: State<'_, AppContext>) -> AppState {
+    ctx.store.load()
+}
+
+#[tauri::command]
+pub fn provide_secret(
+    run_id: String, label: String, value: String, ctx: State<'_, AppContext>,
+) -> Result<(), String> {
+    let sender = ctx.runs.lock().unwrap().get(&run_id).cloned()
+        .ok_or_else(|| "진행 중인 작업을 찾지 못했어요".to_string())?;
+    sender.try_send((label, value)).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn start_flow(
+    tool_id: String, flow: String, demo: bool,
+    app: AppHandle, ctx: State<'_, AppContext>,
+) -> Result<String, String> {
+    let platform = current_platform()?;
+    let flow = match flow.as_str() {
+        "install" => Flow::Install,
+        "update" => Flow::Update,
+        "uninstall" => Flow::Uninstall,
+        other => return Err(format!("모르는 작업이에요: {other}")),
+    };
+    let installed: Vec<String> = ctx.store.load().installations.iter()
+        .map(|i| i.recipe_id.clone()).collect();
+    let plan = build_plan(&ctx.catalog, &tool_id, platform, flow, &installed).map_err(err_str)?;
+
+    let run_id = format!("run-{}", ctx.run_seq.fetch_add(1, Ordering::Relaxed));
+    let (tx, mut rx) = mpsc::channel::<(String, String)>(4);
+    ctx.runs.lock().unwrap().insert(run_id.clone(), tx);
+
+    let catalog = ctx.catalog.clone();
+    let store_path = ctx.store_path();
+    let id_for_task = run_id.clone();
+    tauri::async_runtime::spawn(async move {
+        let emitter = TauriEmitter { app: app.clone() };
+        let success = if demo {
+            run_demo(&plan, &id_for_task, &emitter).await
+        } else {
+            let process = TokioProcessRunner;
+            let opener = PluginUrlOpener { app: app.clone() };
+            let deps = RunDeps {
+                process: &process,
+                emitter: &emitter,
+                opener: &opener,
+                vault: SecretVault::new(),
+            };
+            run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx).await.success
+        };
+        if success && !demo {
+            let store = StateStore::new(store_path);
+            match flow {
+                Flow::Install | Flow::Update => {
+                    let _ = store.upsert(Installation {
+                        recipe_id: plan.target_id.clone(), version: None,
+                        installed_at: now_unix(), auth_done: true, verified_at: Some(now_unix()),
+                    });
+                    // 의존성으로 함께 설치된 도구들도 기록
+                    for id in &plan.tool_order {
+                        if id != &plan.target_id {
+                            let _ = store.upsert(Installation {
+                                recipe_id: id.clone(), version: None,
+                                installed_at: now_unix(), auth_done: false, verified_at: Some(now_unix()),
+                            });
+                        }
+                    }
+                }
+                Flow::Uninstall => { let _ = store.remove(&plan.target_id); }
+            }
+        }
+        if let Some(ctx) = app.try_state::<AppContext>() {
+            ctx.runs.lock().unwrap().remove(&id_for_task);
+        }
+    });
+    Ok(run_id)
+}
+
+/// M2 시연용: 실행 없이 진행 이벤트만 스텝당 400ms 간격으로 흘린다
+async fn run_demo(
+    plan: &crate::recipe::plan::InstallPlan, run_id: &str, emitter: &impl ProgressEmitter,
+) -> bool {
+    let total = plan.steps.len();
+    for (i, planned) in plan.steps.iter().enumerate() {
+        let base = ProgressEvent {
+            run_id: run_id.to_string(),
+            recipe_id: planned.recipe_id.clone(),
+            recipe_name: planned.recipe_name.clone(),
+            section: planned.section.as_str().to_string(),
+            step_index: i,
+            total_steps: total,
+            friendly: planned.step.friendly().to_string(),
+            status: StepStatus::Running,
+        };
+        emitter.progress(&base);
+        emitter.log(run_id, &format!("[시연] {}", planned.step.friendly()));
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        emitter.progress(&ProgressEvent { status: StepStatus::Succeeded, ..base.clone() });
+    }
+    emitter.progress(&ProgressEvent {
+        run_id: run_id.to_string(), recipe_id: plan.target_id.clone(),
+        recipe_name: String::new(), section: "done".into(),
+        step_index: total, total_steps: total,
+        friendly: "모두 끝났어요".into(), status: StepStatus::Done { success: true },
+    });
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::recipe::loader::Catalog;
+    use crate::state::{AppState, Installation};
+
+    #[test]
+    fn catalog_entries_carry_install_state_and_missing_requires() {
+        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let state = AppState {
+            installations: vec![Installation {
+                recipe_id: "mock-prereq".into(), version: Some("0.1.0".into()),
+                installed_at: 1, auth_done: true, verified_at: Some(2),
+            }],
+        };
+        let entries = to_catalog_entries(&catalog, &state);
+        let prereq = entries.iter().find(|e| e.id == "mock-prereq").unwrap();
+        assert!(prereq.installed);
+        assert_eq!(prereq.installed_version.as_deref(), Some("0.1.0"));
+        let plugin = entries.iter().find(|e| e.id == "mock-plugin").unwrap();
+        assert!(!plugin.installed);
+        assert_eq!(plugin.missing_requires, vec!["mock-tool"]); // mock-tool 미설치라 경고 배지감
+    }
+
+    #[test]
+    fn progress_event_serializes_camel_case_with_kind_tag() {
+        use crate::runner::events::{ProgressEvent, StepStatus};
+        let ev = ProgressEvent {
+            run_id: "run-1".into(), recipe_id: "mock-tool".into(),
+            recipe_name: "모의 도구".into(), section: "install".into(),
+            step_index: 2, total_steps: 8, friendly: "설치 중".into(),
+            status: StepStatus::WaitingSecret { label: "api_key".into() },
+        };
+        let json = serde_json::to_string(&ev).unwrap();
+        assert!(json.contains("\"runId\":\"run-1\""));
+        assert!(json.contains("\"stepIndex\":2"));
+        assert!(json.contains("\"totalSteps\":8"));
+        assert!(json.contains("\"status\":{\"kind\":\"waitingSecret\",\"label\":\"api_key\"}"));
+    }
+}
