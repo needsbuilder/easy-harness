@@ -21,7 +21,7 @@ export interface DryRunStep {
   recipeId: string; recipeName: string; section: string; stepType: string; friendly: string;
 }
 export interface DryRunAuth {
-  pattern: "browser_login" | "api_key" | "interactive_terminal";
+  pattern: "browser_login" | "api_key" | "interactive_terminal" | "automatic";
   guide: string[];
 }
 export interface DryRunReport {
