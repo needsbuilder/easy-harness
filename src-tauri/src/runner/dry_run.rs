@@ -68,11 +68,23 @@ mod tests {
     }
 
     #[test]
-    fn all_bundled_recipes_dry_run_on_both_platforms() {
+    fn all_bundled_recipes_dry_run_on_declared_platforms() {
         let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
         assert!(!catalog.recipes.is_empty());
         for recipe in &catalog.recipes {
-            for platform in [Platform::Mac, Platform::Windows] {
+            let declared = [
+                (Platform::Mac, recipe.platforms.mac.is_some()),
+                (Platform::Windows, recipe.platforms.windows.is_some()),
+            ];
+            assert!(
+                declared.iter().any(|(_, has)| *has),
+                "{}: 플랫폼 섹션이 하나도 없어요",
+                recipe.id
+            );
+            for (platform, has) in declared {
+                if !has {
+                    continue;
+                }
                 let report = dry_run(&catalog, &recipe.id, platform)
                     .unwrap_or_else(|e| panic!("{} @ {:?}: {e}", recipe.id, platform));
                 assert!(

@@ -252,4 +252,20 @@ mod tests {
             .all(|s| matches!(s.section, Section::Update)));
         assert!(!plan.steps.is_empty());
     }
+
+    #[test]
+    fn missing_platform_section_errors() {
+        let mut cat = catalog();
+        let tool = cat
+            .recipes
+            .iter_mut()
+            .find(|r| r.id == "mock-tool")
+            .unwrap();
+        tool.platforms.windows = None;
+        let err = build_plan(&cat, "mock-tool", Platform::Windows, Flow::Install, &[]).unwrap_err();
+        assert!(matches!(
+            err,
+            crate::error::EngineError::PlatformUnsupported { .. }
+        ));
+    }
 }
