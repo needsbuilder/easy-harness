@@ -3,7 +3,7 @@
 ## 현재 작업
 - **마일스톤 2 (앱 뼈대 + 레시피 엔진 + 스텝 러너 + 드라이런) 완료, main에 머지됨** (2026-07-05, 머지 커밋 029ebf8)
 - 태스크 16개 전부 구현·리뷰 통과. 최종 전체 리뷰(opus) 판정: Ready to merge = Yes (Critical 0)
-- 테스트: cargo 37 + vitest 19 전부 GREEN, clippy/fmt 클린. `tauri dev` 부팅 스모크 통과 (GUI 육안 데모 확인은 사용자 몫)
+- 테스트: cargo 37 + vitest 19 전부 GREEN, clippy/fmt 클린. `tauri dev` 부팅 스모크 통과. **GUI 육안 데모 확인 완료 (사용자, 2026-07-05 "다 잘되네")**
 
 ## 다음 스텝
 1. **마일스톤 3 계획 작성** (writing-plans): 하네스 6종 실물 레시피 (설치→인증→verify). **각 도구 설치법·지원 모델·인증 방식 라이브 검증 필수** (스펙 9절)
