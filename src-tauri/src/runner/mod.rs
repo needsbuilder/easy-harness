@@ -2,6 +2,7 @@ pub mod download;
 pub mod dry_run;
 pub mod events;
 pub mod process;
+pub mod pty;
 pub mod secrets;
 pub mod step_runner;
 
