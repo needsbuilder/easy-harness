@@ -47,6 +47,7 @@ pub fn dry_run(
                 crate::recipe::schema::AuthPattern::BrowserLogin => "browser_login",
                 crate::recipe::schema::AuthPattern::ApiKey => "api_key",
                 crate::recipe::schema::AuthPattern::InteractiveTerminal => "interactive_terminal",
+                crate::recipe::schema::AuthPattern::Automatic => "automatic",
             }
             .to_string(),
             guide: a.guide.clone(),

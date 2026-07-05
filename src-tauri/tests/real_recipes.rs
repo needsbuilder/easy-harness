@@ -1,7 +1,7 @@
 //! 실물 레시피 전수 스펙 테스트. 각 레시피 태스크가 아래에 자기 검증을 추가한다.
 use easy_harness_lib::recipe::loader::Catalog;
 use easy_harness_lib::recipe::plan::{build_plan, Flow};
-use easy_harness_lib::recipe::schema::{Platform, ToolKind};
+use easy_harness_lib::recipe::schema::{AuthPattern, Platform, ToolKind};
 
 fn catalog() -> Catalog {
     Catalog::load_dir(&Catalog::bundled_dir()).unwrap()
@@ -74,6 +74,30 @@ fn gajaecode_recipe_pulls_bun_first() {
     )
     .unwrap();
     assert_eq!(plan_installed.tool_order, vec!["gajaecode"]);
+
+    // gjc 0.8.1 실물 CLI에는 login·auth-broker 명령이 없다 (2026-07-06 실기 확인).
+    // 실제 인증은 `gjc setup credentials --yes`(기존 도구 자격증명 자동 가져오기)이며
+    // 사용자 입력이 전혀 없으므로 터미널을 띄우지 않는 automatic 패턴이어야 한다.
+    for p in [Platform::Mac, Platform::Windows] {
+        let auth = r
+            .platforms
+            .get(p)
+            .unwrap()
+            .auth
+            .as_ref()
+            .expect("auth 필요");
+        assert_eq!(auth.pattern, AuthPattern::Automatic, "{p:?}");
+        let joined = format!("{:?}", auth.steps);
+        assert!(
+            joined.contains("setup credentials --yes"),
+            "{p:?}: {joined}"
+        );
+        assert!(!joined.contains("auth-broker"), "{p:?}: {joined}");
+        assert!(
+            !joined.contains("PtySession"),
+            "{p:?}: 터미널 금지: {joined}"
+        );
+    }
 }
 
 #[test]

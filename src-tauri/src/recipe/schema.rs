@@ -130,6 +130,8 @@ pub enum AuthPattern {
     BrowserLogin,
     ApiKey,
     InteractiveTerminal,
+    /// 사용자 입력이 전혀 없는 무대화형 인증 (터미널·브라우저 UI를 띄우지 않음)
+    Automatic,
 }
 
 /// 주의: 내부 태그드 enum(tag="type")에는 serde 제약상 deny_unknown_fields를
