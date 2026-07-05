@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { PrimaryButton } from "../components/Buttons";
 import { getEnvReport } from "../lib/ipc";
@@ -7,11 +7,16 @@ import mascot from "../assets/mascot.png";
 
 export function Welcome() {
   const [report, setReport] = useState<EnvReport | null>(null);
+  const [failed, setFailed] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getEnvReport().then(setReport).catch(() => setReport(null));
+  const check = useCallback(() => {
+    setFailed(false);
+    setReport(null);
+    getEnvReport().then(setReport).catch(() => setFailed(true));
   }, []);
+
+  useEffect(check, [check]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-surface-bg dark:bg-surface-bg-dark px-6 py-10">
@@ -48,6 +53,18 @@ export function Welcome() {
               </li>
             )}
           </ul>
+        ) : failed ? (
+          <div className="mt-4 flex flex-col items-start gap-3">
+            <p className="font-bold">점검이 잠깐 안 됐어요</p>
+            <p className="text-caption text-txt-tertiary">앱을 끄고 다시 켜도 좋고, 아래 버튼을 눌러도 돼요.</p>
+            <button
+              type="button"
+              className="rounded-badge border border-line dark:border-line-dark px-4 py-2 font-bold hover:bg-surface-card-hover"
+              onClick={check}
+            >
+              다시 점검하기
+            </button>
+          </div>
         ) : (
           <p className="mt-4 text-txt-tertiary">점검 중이에요...</p>
         )}
