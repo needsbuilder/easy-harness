@@ -54,3 +54,14 @@ fn codex_recipe_spec() {
     let plan = build_plan(&cat, "codex", Platform::Windows, Flow::Install, &[]).unwrap();
     assert_eq!(plan.tool_order, vec!["codex"]);
 }
+
+#[test]
+fn gajaecode_recipe_pulls_bun_first() {
+    let cat = catalog();
+    let r = cat.get("gajaecode").expect("gajaecode 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "gajaecode", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["bun", "gajaecode"]);
+    let plan_installed = build_plan(&cat, "gajaecode", Platform::Mac, Flow::Install, &["bun".into()]).unwrap();
+    assert_eq!(plan_installed.tool_order, vec!["gajaecode"]);
+}
