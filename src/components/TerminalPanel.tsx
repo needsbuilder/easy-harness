@@ -11,9 +11,14 @@ export function TerminalPanel({ sessionId }: { sessionId: string }) {
     const term = new Terminal({ cols: 100, rows: 30, convertEol: true, fontFamily: "JetBrains Mono Variable, monospace" });
     term.open(hostRef.current);
     const sub = term.onData((data) => { void ptyInput(sessionId, data); });
+    let cancelled = false;
     let unlisten: (() => void) | undefined;
-    void onPtyData(sessionId, (data) => term.write(data)).then((un) => { unlisten = un; });
+    void onPtyData(sessionId, (data) => { if (!cancelled) term.write(data); }).then((un) => {
+      if (cancelled) { un(); return; }
+      unlisten = un;
+    });
     return () => {
+      cancelled = true;
       sub.dispose();
       unlisten?.();
       term.dispose();
