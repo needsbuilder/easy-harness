@@ -40,6 +40,7 @@ pub fn run() {
                 runs: Mutex::new(HashMap::new()),
                 run_seq: AtomicU64::new(1),
                 pty_inputs: std::sync::Arc::new(Mutex::new(HashMap::new())),
+                run_logs: Mutex::new(HashMap::new()),
             });
             Ok(())
         })
@@ -51,6 +52,7 @@ pub fn run() {
             commands::provide_secret,
             commands::start_flow,
             commands::pty_input,
+            commands::export_diagnostics,
         ])
         .run(tauri::generate_context!())
         .expect("이지 하네스 실행 실패");
