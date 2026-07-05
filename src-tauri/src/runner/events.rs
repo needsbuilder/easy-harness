@@ -21,6 +21,7 @@ pub enum StepStatus {
     Succeeded,
     Failed { message: String },
     WaitingSecret { label: String },
+    Terminal { session_id: String },
     Done { success: bool },
 }
 

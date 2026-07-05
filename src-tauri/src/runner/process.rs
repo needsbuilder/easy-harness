@@ -42,7 +42,7 @@ impl ProcessRunner for TokioProcessRunner {
 /// 레지스트리(머신+사용자)에서 현재 PATH를 다시 읽는다.
 /// 설치기가 방금 등록한 PATH 항목을 앱 재시작 없이 반영하기 위함.
 #[cfg(windows)]
-fn fresh_path() -> Option<String> {
+pub(crate) fn fresh_path() -> Option<String> {
     fn query(hive_key: &str) -> Option<String> {
         let out = std::process::Command::new("reg")
             .args(["query", hive_key, "/v", "Path"])

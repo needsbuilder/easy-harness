@@ -51,6 +51,9 @@ export function runReducer(state: RunState, ev: ProgressEvent): RunState {
       return { ...base, error: { message: ev.status.message, friendly: ev.friendly } };
     case "waitingSecret":
       return { ...base, waitingSecret: ev.status.label };
+    case "terminal":
+      // 실제 터미널 UI 배선은 Task 15 몫. 여기선 최소한으로 상태만 갱신해 빌드가 깨지지 않게 한다.
+      return { ...base, waitingSecret: null };
     case "done":
       return { ...base, percent: 100, done: true, success: ev.status.success };
   }

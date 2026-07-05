@@ -34,6 +34,7 @@ export type StepStatus =
   | { kind: "succeeded" }
   | { kind: "failed"; message: string }
   | { kind: "waitingSecret"; label: string }
+  | { kind: "terminal"; sessionId: string }
   | { kind: "done"; success: boolean };
 
 export interface ProgressEvent {
