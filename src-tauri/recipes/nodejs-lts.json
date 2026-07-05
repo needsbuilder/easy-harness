@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "nodejs-lts",
+  "name": "Node.js",
+  "kind": "prerequisite",
+  "easyDescription": "몇몇 도구가 움직이는 데 필요한 기본 부품이에요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "supportedModels": [],
+  "recommended": false,
+  "requires": [],
+  "platforms": {
+    "mac": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Node.js가 이미 있는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "node --version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "Node.js 공식 설치 파일을 열고 있어요. 설치 창이 뜨면 계속을 눌러 주세요", "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0.pkg", "file_name": "node-v24.18.0.pkg", "command": "open", "args": ["-W", "{{file}}"] },
+        { "type": "check_command", "friendly": "Node.js가 잘 설치됐는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "node --version"] }
+      ],
+      "verify": [
+        { "type": "check_command", "friendly": "Node.js에게 첫 인사를 시켜 볼게요", "command": "/bin/zsh", "args": ["-lc", "node --version"] }
+      ],
+      "update": [
+        { "type": "download_run", "friendly": "Node.js를 새 버전으로 바꾸고 있어요. 설치 창이 뜨면 계속을 눌러 주세요", "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0.pkg", "file_name": "node-v24.18.0.pkg", "command": "open", "args": ["-W", "{{file}}"] }
+      ],
+      "uninstall": [],
+      "rollback": []
+    },
+    "windows": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "Node.js가 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "node --version"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "Node.js를 설치하고 있어요. 파란 확인 창이 뜨면 예를 눌러 주세요", "command": "winget", "args": ["install", "--id", "OpenJS.NodeJS.LTS", "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements"] },
+        { "type": "check_command", "friendly": "Node.js가 잘 설치됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "node --version"] }
+      ],
+      "verify": [
+        { "type": "check_command", "friendly": "Node.js에게 첫 인사를 시켜 볼게요", "command": "cmd", "args": ["/C", "node --version"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "Node.js를 새 버전으로 바꾸고 있어요", "command": "winget", "args": ["upgrade", "--id", "OpenJS.NodeJS.LTS", "-e", "--silent", "--accept-package-agreements", "--accept-source-agreements"] }
+      ],
+      "uninstall": [],
+      "rollback": []
+    }
+  }
+}
