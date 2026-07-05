@@ -9,6 +9,9 @@ export function Dashboard() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   const navigate = useNavigate();
 
+  // 앱 자체 업데이트 알림 자리. 마일스톤 5에서 tauri-plugin-updater 연동으로 채워진다
+  const appUpdateReady = false;
+
   const reload = useCallback(() => {
     getAppState().then(setState).catch(() => setState({ installations: [] }));
     listCatalog().then(setCatalog).catch(() => setCatalog([]));
@@ -29,6 +32,12 @@ export function Dashboard() {
 
   return (
     <div>
+      {appUpdateReady && (
+        <div className="mb-6 flex items-center justify-between rounded-card border border-line-gold bg-surface-gold-tint px-5 py-4">
+          <p className="font-bold">이지 하네스 새 버전이 나왔어요. 1분이면 끝나요.</p>
+          <PrimaryButton>지금 업데이트</PrimaryButton>
+        </div>
+      )}
       <h1 className="text-title font-extrabold">내 도구</h1>
       {items.length === 0 ? (
         <div className="mt-10 flex flex-col items-start gap-4">
