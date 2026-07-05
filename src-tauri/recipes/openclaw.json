@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "openclaw",
+  "name": "OpenClaw",
+  "kind": "harness",
+  "easyDescription": "메신저로 심부름을 시키는 만능 AI 비서예요. 코딩도 해요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "supportedModels": [
+    { "modelLabel": "Claude, GPT, Gemini 외 40여 가지", "accountLabel": "쓰려는 모델의 계정 또는 API 키" }
+  ],
+  "recommended": false,
+  "requires": [],
+  "platforms": {
+    "mac": {
+      "prerequisites": ["nodejs-lts"],
+      "detect": [
+        { "type": "check_command", "friendly": "OpenClaw가 이미 있는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "openclaw --version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "OpenClaw 공식 설치 프로그램을 실행하고 있어요", "url": "https://openclaw.ai/install.sh", "file_name": "openclaw-install.sh", "command": "/bin/bash", "args": ["{{file}}", "--no-onboard"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw --version"] }
+      ],
+      "auth": {
+        "pattern": "interactive_terminal",
+        "steps": [
+          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw onboard"] }
+        ],
+        "guide": [
+          "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
+          "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+          "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "OpenClaw 상태를 점검하고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw --version"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "OpenClaw를 새 버전으로 바꾸고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw update"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "OpenClaw를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw uninstall --all --yes --non-interactive"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw uninstall --all --yes --non-interactive || true"] }
+      ]
+    },
+    "windows": {
+      "prerequisites": ["nodejs-lts"],
+      "detect": [
+        { "type": "check_command", "friendly": "OpenClaw가 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "openclaw --version"] }
+      ],
+      "install": [
+        { "type": "download_run", "friendly": "OpenClaw 공식 설치 프로그램을 실행하고 있어요", "url": "https://openclaw.ai/install.ps1", "file_name": "openclaw-install.ps1", "command": "powershell", "args": ["-ExecutionPolicy", "Bypass", "-File", "{{file}}", "-NoOnboard"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "openclaw --version"] }
+      ],
+      "auth": {
+        "pattern": "interactive_terminal",
+        "steps": [
+          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "cmd", "args": ["/C", "openclaw onboard"] }
+        ],
+        "guide": [
+          "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
+          "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+          "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "OpenClaw 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "openclaw --version"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "OpenClaw를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "openclaw update"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "OpenClaw를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "openclaw uninstall --all --yes --non-interactive"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "openclaw uninstall --all --yes --non-interactive"] }
+      ]
+    }
+  }
+}

@@ -65,3 +65,12 @@ fn gajaecode_recipe_pulls_bun_first() {
     let plan_installed = build_plan(&cat, "gajaecode", Platform::Mac, Flow::Install, &["bun".into()]).unwrap();
     assert_eq!(plan_installed.tool_order, vec!["gajaecode"]);
 }
+
+#[test]
+fn openclaw_recipe_pulls_node_first() {
+    let cat = catalog();
+    let r = cat.get("openclaw").expect("openclaw 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "openclaw", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["nodejs-lts", "openclaw"]);
+}
