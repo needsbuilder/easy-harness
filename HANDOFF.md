@@ -1,12 +1,10 @@
 # HANDOFF — 이지 하네스
 
 ## 현재 작업
-- **마일스톤 3 구현 계획 작성 완료** (2026-07-05): `docs/superpowers/plans/2026-07-05-easy-harness-m3-real-recipes.md` (20개 태스크)
-- 하네스 6종 설치·인증·모델 정보는 멀티에이전트 워크플로우(리서치 6 + 교차 검증 6 + 크레이트 1 + Node LTS 1)로 **2026-07-05 라이브 검증 완료, 전 항목 confidence high**. 결과는 계획서에 박제됨 (구현 중 재검증 불필요)
-- 계획 자기 리뷰 통과: 플레이스홀더 0, 레시피 JSON 8종 기계 검증 OK
+- **마일스톤 3 Task 7 완료** (2026-07-05, feature/m3-real-recipes 브랜치, 커밋 dd80495): Claude Code 레시피 JSON + 스펙 테스트 구현. TDD 순서 준수(테스트 추가 → 실패 확인 → JSON 작성 → 통과 → 커밋). 네이티브 설치 스크립트(install.sh/install.ps1), 터미널 로그인, 3단계 auth.guide, Mac/Windows 지원. cargo test 모두 GREEN (44개 library + 2개 real_recipes). 상세는 `.superpowers/sdd/task-7-report.md`.
 
 ## 다음 스텝
-1. **M3 계획 실행** — 실행 방식 사용자 선택 대기: 서브에이전트 주도(권장) vs 인라인(executing-plans)
+1. **M3 Task 8부터 계속** (계획서 `docs/superpowers/plans/2026-07-05-easy-harness-m3-real-recipes.md`, 진행 장부 `.superpowers/sdd/progress.md`) — 남은 순서: Task 8 Codex, 9 GajaeCode, 10 OpenClaw, 11 Hermes, 12 OpenCode, 13~16 인증 UI·PTY·실모드, 17~19 진단 zip·서명·원격 갱신, 20 최종 검증. (Task 1~7 완료: nodejs-lts·bun·claude-code 레시피 포함)
 2. 실행 완료 후: 서명 개인키(`recipe-signing-secret.key`) 형에게 안전 보관 전달, 레시피 원격 저장소(`needslab-ai/easy-harness-recipes`) 생성은 M5
 3. GitHub 리모트 여전히 미등록 (CI 실행하려면 필요)
 
