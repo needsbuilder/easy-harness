@@ -47,7 +47,10 @@ pub struct FakeProcessRunner {
 impl FakeProcessRunner {
     pub fn new(mut responses: Vec<std::io::Result<ProcessOutput>>) -> Self {
         responses.reverse(); // pop()으로 앞에서부터 소비
-        FakeProcessRunner { responses: Mutex::new(responses), calls: Mutex::new(Vec::new()) }
+        FakeProcessRunner {
+            responses: Mutex::new(responses),
+            calls: Mutex::new(Vec::new()),
+        }
     }
     pub fn calls(&self) -> Vec<(String, Vec<String>)> {
         self.calls.lock().unwrap().clone()
@@ -56,9 +59,15 @@ impl FakeProcessRunner {
 
 impl ProcessRunner for FakeProcessRunner {
     async fn run(&self, command: &str, args: &[String]) -> std::io::Result<ProcessOutput> {
-        self.calls.lock().unwrap().push((command.to_string(), args.to_vec()));
+        self.calls
+            .lock()
+            .unwrap()
+            .push((command.to_string(), args.to_vec()));
         self.responses.lock().unwrap().pop().unwrap_or_else(|| {
-            Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no scripted response"))
+            Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "no scripted response",
+            ))
         })
     }
 }

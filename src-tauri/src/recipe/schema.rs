@@ -22,15 +22,26 @@ pub struct Recipe {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ToolKind { Harness, Plugin, Prerequisite }
+pub enum ToolKind {
+    Harness,
+    Plugin,
+    Prerequisite,
+}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct Pricing { pub label: String, pub kind: PricingKind }
+pub struct Pricing {
+    pub label: String,
+    pub kind: PricingKind,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum PricingKind { Free, Paid, Freemium }
+pub enum PricingKind {
+    Free,
+    Paid,
+    Freemium,
+}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -41,11 +52,17 @@ pub struct ModelBadge {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Platform { Mac, Windows }
+pub enum Platform {
+    Mac,
+    Windows,
+}
 
 impl Platform {
     pub fn as_str(&self) -> &'static str {
-        match self { Platform::Mac => "mac", Platform::Windows => "windows" }
+        match self {
+            Platform::Mac => "mac",
+            Platform::Windows => "windows",
+        }
     }
     /// 실행 중인 OS를 레시피 플랫폼 키로. 그 외 OS는 None (v1은 맥·윈도우만)
     pub fn current() -> Option<Platform> {
@@ -68,7 +85,10 @@ pub struct Platforms {
 
 impl Platforms {
     pub fn get(&self, p: Platform) -> Option<&PlatformSpec> {
-        match p { Platform::Mac => self.mac.as_ref(), Platform::Windows => self.windows.as_ref() }
+        match p {
+            Platform::Mac => self.mac.as_ref(),
+            Platform::Windows => self.windows.as_ref(),
+        }
     }
 }
 
@@ -106,7 +126,11 @@ pub struct AuthSpec {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum AuthPattern { BrowserLogin, ApiKey, InteractiveTerminal }
+pub enum AuthPattern {
+    BrowserLogin,
+    ApiKey,
+    InteractiveTerminal,
+}
 
 /// 주의: 내부 태그드 enum(tag="type")에는 serde 제약상 deny_unknown_fields를
 /// 걸 수 없다. 모르는 "type" 값은 에러가 나지만(원하는 동작), variant 안의
@@ -114,21 +138,54 @@ pub enum AuthPattern { BrowserLogin, ApiKey, InteractiveTerminal }
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Step {
-    CheckCommand { friendly: String, command: String, #[serde(default)] args: Vec<String> },
-    RunCommand { friendly: String, command: String, #[serde(default)] args: Vec<String> },
-    DownloadRun { friendly: String, url: String, file_name: String, #[serde(default)] args: Vec<String> },
-    OpenUrl { friendly: String, url: String },
-    InputSecret { friendly: String, label: String },
-    PtySession { friendly: String, command: String, #[serde(default)] args: Vec<String> },
-    PathCheck { friendly: String, path: String },
+    CheckCommand {
+        friendly: String,
+        command: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    RunCommand {
+        friendly: String,
+        command: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    DownloadRun {
+        friendly: String,
+        url: String,
+        file_name: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    OpenUrl {
+        friendly: String,
+        url: String,
+    },
+    InputSecret {
+        friendly: String,
+        label: String,
+    },
+    PtySession {
+        friendly: String,
+        command: String,
+        #[serde(default)]
+        args: Vec<String>,
+    },
+    PathCheck {
+        friendly: String,
+        path: String,
+    },
 }
 
 impl Step {
     pub fn friendly(&self) -> &str {
         match self {
-            Step::CheckCommand { friendly, .. } | Step::RunCommand { friendly, .. }
-            | Step::DownloadRun { friendly, .. } | Step::OpenUrl { friendly, .. }
-            | Step::InputSecret { friendly, .. } | Step::PtySession { friendly, .. }
+            Step::CheckCommand { friendly, .. }
+            | Step::RunCommand { friendly, .. }
+            | Step::DownloadRun { friendly, .. }
+            | Step::OpenUrl { friendly, .. }
+            | Step::InputSecret { friendly, .. }
+            | Step::PtySession { friendly, .. }
             | Step::PathCheck { friendly, .. } => friendly,
         }
     }

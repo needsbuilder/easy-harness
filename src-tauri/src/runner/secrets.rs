@@ -47,7 +47,10 @@ mod tests {
     fn substitute_and_mask_roundtrip() {
         let mut vault = SecretVault::new();
         vault.insert("api_key", "sk-live-1234");
-        assert_eq!(vault.substitute("--key={{secret:api_key}}"), "--key=sk-live-1234");
+        assert_eq!(
+            vault.substitute("--key={{secret:api_key}}"),
+            "--key=sk-live-1234"
+        );
         assert_eq!(vault.substitute("{{secret:none}}"), "{{secret:none}}"); // 미등록은 그대로
         assert_eq!(vault.mask("token sk-live-1234 ok"), "token ••• ok");
         assert!(vault.has("api_key"));

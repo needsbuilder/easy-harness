@@ -51,61 +51,90 @@ pub struct CatalogEntry {
 }
 
 pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEntry> {
-    let installed_ids: Vec<&str> = state.installations.iter().map(|i| i.recipe_id.as_str()).collect();
-    catalog.recipes.iter().map(|r| {
-        let installation = state.installations.iter().find(|i| i.recipe_id == r.id);
-        CatalogEntry {
-            id: r.id.clone(),
-            name: r.name.clone(),
-            kind: match r.kind {
-                ToolKind::Harness => "harness", ToolKind::Plugin => "plugin",
-                ToolKind::Prerequisite => "prerequisite",
-            }.to_string(),
-            easy_description: r.easy_description.clone(),
-            pricing: r.pricing.clone(),
-            supported_models: r.supported_models.clone(),
-            recommended: r.recommended,
-            requires: r.requires.clone(),
-            installed: installation.is_some(),
-            installed_version: installation.and_then(|i| i.version.clone()),
-            missing_requires: r.requires.iter()
-                .filter(|id| !installed_ids.contains(&id.as_str()))
-                .cloned().collect(),
-        }
-    }).collect()
+    let installed_ids: Vec<&str> = state
+        .installations
+        .iter()
+        .map(|i| i.recipe_id.as_str())
+        .collect();
+    catalog
+        .recipes
+        .iter()
+        .map(|r| {
+            let installation = state.installations.iter().find(|i| i.recipe_id == r.id);
+            CatalogEntry {
+                id: r.id.clone(),
+                name: r.name.clone(),
+                kind: match r.kind {
+                    ToolKind::Harness => "harness",
+                    ToolKind::Plugin => "plugin",
+                    ToolKind::Prerequisite => "prerequisite",
+                }
+                .to_string(),
+                easy_description: r.easy_description.clone(),
+                pricing: r.pricing.clone(),
+                supported_models: r.supported_models.clone(),
+                recommended: r.recommended,
+                requires: r.requires.clone(),
+                installed: installation.is_some(),
+                installed_version: installation.and_then(|i| i.version.clone()),
+                missing_requires: r
+                    .requires
+                    .iter()
+                    .filter(|id| !installed_ids.contains(&id.as_str()))
+                    .cloned()
+                    .collect(),
+            }
+        })
+        .collect()
 }
 
 fn current_platform() -> Result<Platform, String> {
     Platform::current().ok_or_else(|| "지원하지 않는 운영체제예요".to_string())
 }
 
-fn err_str(e: EngineError) -> String { e.to_string() }
+fn err_str(e: EngineError) -> String {
+    e.to_string()
+}
 
-struct TauriEmitter { app: AppHandle }
+struct TauriEmitter {
+    app: AppHandle,
+}
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct LogPayload { run_id: String, line: String }
+struct LogPayload {
+    run_id: String,
+    line: String,
+}
 
 impl ProgressEmitter for TauriEmitter {
     fn progress(&self, ev: &ProgressEvent) {
         let _ = self.app.emit("install://progress", ev);
     }
     fn log(&self, run_id: &str, line: &str) {
-        let _ = self.app.emit("install://log", &LogPayload {
-            run_id: run_id.to_string(), line: line.to_string(),
-        });
+        let _ = self.app.emit(
+            "install://log",
+            &LogPayload {
+                run_id: run_id.to_string(),
+                line: line.to_string(),
+            },
+        );
     }
 }
 
-struct PluginUrlOpener { app: AppHandle }
+struct PluginUrlOpener {
+    app: AppHandle,
+}
 
 impl UrlOpener for PluginUrlOpener {
     fn open(&self, url: &str) -> Result<(), String> {
         // 프론트 권한 체계(capabilities)는 안 타지만, 백엔드 네이티브 코드라
         // opener 플러그인 인스턴스(self.app.opener())로 여는 것과 동작 동일.
         // 필드를 실제로 사용해 dead_code 경고도 해결.
-        self.app.opener().open_url(url, None::<String>).map_err(|e| e.to_string())
+        self.app
+            .opener()
+            .open_url(url, None::<String>)
+            .map_err(|e| e.to_string())
     }
 }
 
@@ -132,17 +161,28 @@ pub fn get_app_state(ctx: State<'_, AppContext>) -> AppState {
 
 #[tauri::command]
 pub fn provide_secret(
-    run_id: String, label: String, value: String, ctx: State<'_, AppContext>,
+    run_id: String,
+    label: String,
+    value: String,
+    ctx: State<'_, AppContext>,
 ) -> Result<(), String> {
-    let sender = ctx.runs.lock().unwrap().get(&run_id).cloned()
+    let sender = ctx
+        .runs
+        .lock()
+        .unwrap()
+        .get(&run_id)
+        .cloned()
         .ok_or_else(|| "진행 중인 작업을 찾지 못했어요".to_string())?;
     sender.try_send((label, value)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn start_flow(
-    tool_id: String, flow: String, demo: bool,
-    app: AppHandle, ctx: State<'_, AppContext>,
+    tool_id: String,
+    flow: String,
+    demo: bool,
+    app: AppHandle,
+    ctx: State<'_, AppContext>,
 ) -> Result<String, String> {
     let platform = current_platform()?;
     let flow = match flow.as_str() {
@@ -151,8 +191,13 @@ pub fn start_flow(
         "uninstall" => Flow::Uninstall,
         other => return Err(format!("모르는 작업이에요: {other}")),
     };
-    let installed: Vec<String> = ctx.store.load().installations.iter()
-        .map(|i| i.recipe_id.clone()).collect();
+    let installed: Vec<String> = ctx
+        .store
+        .load()
+        .installations
+        .iter()
+        .map(|i| i.recipe_id.clone())
+        .collect();
     let plan = build_plan(&ctx.catalog, &tool_id, platform, flow, &installed).map_err(err_str)?;
 
     let run_id = format!("run-{}", ctx.run_seq.fetch_add(1, Ordering::Relaxed));
@@ -175,27 +220,37 @@ pub fn start_flow(
                 opener: &opener,
                 vault: SecretVault::new(),
             };
-            run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx).await.success
+            run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx)
+                .await
+                .success
         };
         if success && !demo {
             let store = StateStore::new(store_path);
             match flow {
                 Flow::Install | Flow::Update => {
                     let _ = store.upsert(Installation {
-                        recipe_id: plan.target_id.clone(), version: None,
-                        installed_at: now_unix(), auth_done: true, verified_at: Some(now_unix()),
+                        recipe_id: plan.target_id.clone(),
+                        version: None,
+                        installed_at: now_unix(),
+                        auth_done: true,
+                        verified_at: Some(now_unix()),
                     });
                     // 의존성으로 함께 설치된 도구들도 기록
                     for id in &plan.tool_order {
                         if id != &plan.target_id {
                             let _ = store.upsert(Installation {
-                                recipe_id: id.clone(), version: None,
-                                installed_at: now_unix(), auth_done: false, verified_at: Some(now_unix()),
+                                recipe_id: id.clone(),
+                                version: None,
+                                installed_at: now_unix(),
+                                auth_done: false,
+                                verified_at: Some(now_unix()),
                             });
                         }
                     }
                 }
-                Flow::Uninstall => { let _ = store.remove(&plan.target_id); }
+                Flow::Uninstall => {
+                    let _ = store.remove(&plan.target_id);
+                }
             }
         }
         if let Some(ctx) = app.try_state::<AppContext>() {
@@ -207,7 +262,9 @@ pub fn start_flow(
 
 /// M2 시연용: 실행 없이 진행 이벤트만 스텝당 400ms 간격으로 흘린다
 async fn run_demo(
-    plan: &crate::recipe::plan::InstallPlan, run_id: &str, emitter: &impl ProgressEmitter,
+    plan: &crate::recipe::plan::InstallPlan,
+    run_id: &str,
+    emitter: &impl ProgressEmitter,
 ) -> bool {
     let total = plan.steps.len();
     for (i, planned) in plan.steps.iter().enumerate() {
@@ -224,13 +281,20 @@ async fn run_demo(
         emitter.progress(&base);
         emitter.log(run_id, &format!("[시연] {}", planned.step.friendly()));
         tokio::time::sleep(std::time::Duration::from_millis(400)).await;
-        emitter.progress(&ProgressEvent { status: StepStatus::Succeeded, ..base.clone() });
+        emitter.progress(&ProgressEvent {
+            status: StepStatus::Succeeded,
+            ..base.clone()
+        });
     }
     emitter.progress(&ProgressEvent {
-        run_id: run_id.to_string(), recipe_id: plan.target_id.clone(),
-        recipe_name: String::new(), section: "done".into(),
-        step_index: total, total_steps: total,
-        friendly: "모두 끝났어요".into(), status: StepStatus::Done { success: true },
+        run_id: run_id.to_string(),
+        recipe_id: plan.target_id.clone(),
+        recipe_name: String::new(),
+        section: "done".into(),
+        step_index: total,
+        total_steps: total,
+        friendly: "모두 끝났어요".into(),
+        status: StepStatus::Done { success: true },
     });
     true
 }
@@ -246,8 +310,11 @@ mod tests {
         let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
         let state = AppState {
             installations: vec![Installation {
-                recipe_id: "mock-prereq".into(), version: Some("0.1.0".into()),
-                installed_at: 1, auth_done: true, verified_at: Some(2),
+                recipe_id: "mock-prereq".into(),
+                version: Some("0.1.0".into()),
+                installed_at: 1,
+                auth_done: true,
+                verified_at: Some(2),
             }],
         };
         let entries = to_catalog_entries(&catalog, &state);
@@ -263,10 +330,16 @@ mod tests {
     fn progress_event_serializes_camel_case_with_kind_tag() {
         use crate::runner::events::{ProgressEvent, StepStatus};
         let ev = ProgressEvent {
-            run_id: "run-1".into(), recipe_id: "mock-tool".into(),
-            recipe_name: "모의 도구".into(), section: "install".into(),
-            step_index: 2, total_steps: 8, friendly: "설치 중".into(),
-            status: StepStatus::WaitingSecret { label: "api_key".into() },
+            run_id: "run-1".into(),
+            recipe_id: "mock-tool".into(),
+            recipe_name: "모의 도구".into(),
+            section: "install".into(),
+            step_index: 2,
+            total_steps: 8,
+            friendly: "설치 중".into(),
+            status: StepStatus::WaitingSecret {
+                label: "api_key".into(),
+            },
         };
         let json = serde_json::to_string(&ev).unwrap();
         assert!(json.contains("\"runId\":\"run-1\""));
