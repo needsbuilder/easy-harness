@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "mock-tool",
+  "name": "모의 도구",
+  "kind": "harness",
+  "easyDescription": "설치 흐름을 시험하는 가짜 도구예요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "supportedModels": [ { "modelLabel": "Claude 모델", "accountLabel": "Anthropic 계정" } ],
+  "recommended": true,
+  "platforms": {
+    "mac": {
+      "prerequisites": ["mock-prereq"],
+      "detect": [ { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "echo", "args": ["not-found"] } ],
+      "install": [
+        { "type": "run_command", "friendly": "지금 모의 도구를 설치하고 있어요", "command": "echo", "args": ["installing tool"] },
+        { "type": "path_check", "friendly": "설치된 자리를 확인하고 있어요", "path": "/tmp" }
+      ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [ { "type": "open_url", "friendly": "로그인 창을 열어 드릴게요", "url": "https://example.com/login" } ],
+        "guide": [
+          "아래 버튼을 누르면 인터넷 창이 열려요",
+          "쓰던 계정으로 로그인하세요",
+          "허용 버튼만 누르면 끝나요"
+        ]
+      },
+      "verify": [ { "type": "check_command", "friendly": "첫 인사를 시켜 볼게요", "command": "echo", "args": ["hello"] } ],
+      "update": [ { "type": "run_command", "friendly": "새 버전으로 바꾸고 있어요", "command": "echo", "args": ["updating"] } ],
+      "uninstall": [ { "type": "run_command", "friendly": "깨끗하게 지우고 있어요", "command": "echo", "args": ["uninstalling"] } ],
+      "rollback": [ { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "echo", "args": ["rollback tool"] } ]
+    },
+    "windows": {
+      "prerequisites": ["mock-prereq"],
+      "detect": [ { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "cmd", "args": ["/C", "echo not-found"] } ],
+      "install": [ { "type": "run_command", "friendly": "지금 모의 도구를 설치하고 있어요", "command": "cmd", "args": ["/C", "echo installing tool"] } ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [ { "type": "open_url", "friendly": "로그인 창을 열어 드릴게요", "url": "https://example.com/login" } ],
+        "guide": [
+          "아래 버튼을 누르면 인터넷 창이 열려요",
+          "쓰던 계정으로 로그인하세요",
+          "허용 버튼만 누르면 끝나요"
+        ]
+      },
+      "verify": [ { "type": "check_command", "friendly": "첫 인사를 시켜 볼게요", "command": "cmd", "args": ["/C", "echo hello"] } ],
+      "update": [], "uninstall": [], "rollback": []
+    }
+  }
+}

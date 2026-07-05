@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "mock-plugin",
+  "name": "모의 플러그인",
+  "kind": "plugin",
+  "easyDescription": "모의 도구를 강화하는 가짜 플러그인이에요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "requires": ["mock-tool"],
+  "platforms": {
+    "mac": {
+      "detect": [ { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "echo", "args": ["not-found"] } ],
+      "install": [ { "type": "run_command", "friendly": "지금 플러그인을 붙이고 있어요", "command": "echo", "args": ["installing plugin"] } ],
+      "verify": [ { "type": "check_command", "friendly": "잘 붙었는지 볼게요", "command": "echo", "args": ["ok"] } ]
+    },
+    "windows": {
+      "detect": [ { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "cmd", "args": ["/C", "echo not-found"] } ],
+      "install": [ { "type": "run_command", "friendly": "지금 플러그인을 붙이고 있어요", "command": "cmd", "args": ["/C", "echo installing plugin"] } ],
+      "verify": [ { "type": "check_command", "friendly": "잘 붙었는지 볼게요", "command": "cmd", "args": ["/C", "echo ok"] } ]
+    }
+  }
+}
