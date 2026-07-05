@@ -74,3 +74,14 @@ fn openclaw_recipe_pulls_node_first() {
     let plan = build_plan(&cat, "openclaw", Platform::Mac, Flow::Install, &[]).unwrap();
     assert_eq!(plan.tool_order, vec!["nodejs-lts", "openclaw"]);
 }
+
+#[test]
+fn hermes_recipe_spec() {
+    let cat = catalog();
+    let r = cat.get("hermes").expect("hermes 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Harness);
+    let plan = build_plan(&cat, "hermes", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["hermes"]); // 준비물은 설치 스크립트가 자동 해결
+    let mac = r.platforms.get(Platform::Mac).unwrap();
+    assert_eq!(mac.auth.as_ref().unwrap().pattern, easy_harness_lib::recipe::schema::AuthPattern::BrowserLogin);
+}
