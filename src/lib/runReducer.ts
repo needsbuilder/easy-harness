@@ -11,6 +11,7 @@ export interface RunState {
   logs: string[];
   error: { message: string; friendly: string } | null;
   waitingSecret: string | null;
+  terminalSession: string | null;
   done: boolean;
   success: boolean;
 }
@@ -19,7 +20,7 @@ export function initialRunState(targetId: string): RunState {
   return {
     targetId, totalSteps: 0, stepIndex: 0, friendly: "준비하고 있어요",
     percent: 0, phase: 1, section: "detect", logs: [], error: null, waitingSecret: null,
-    done: false, success: false,
+    terminalSession: null, done: false, success: false,
   };
 }
 
@@ -44,7 +45,7 @@ export function runReducer(state: RunState, ev: ProgressEvent): RunState {
   };
   switch (ev.status.kind) {
     case "running":
-      return { ...base, waitingSecret: null };
+      return { ...base, waitingSecret: null, terminalSession: null };
     case "succeeded":
       return { ...base, percent: Math.round(((ev.stepIndex + 1) / ev.totalSteps) * 100) };
     case "failed":
@@ -52,8 +53,7 @@ export function runReducer(state: RunState, ev: ProgressEvent): RunState {
     case "waitingSecret":
       return { ...base, waitingSecret: ev.status.label };
     case "terminal":
-      // 실제 터미널 UI 배선은 Task 15 몫. 여기선 최소한으로 상태만 갱신해 빌드가 깨지지 않게 한다.
-      return { ...base, waitingSecret: null };
+      return { ...base, terminalSession: ev.status.sessionId };
     case "done":
       return { ...base, percent: 100, done: true, success: ev.status.success };
   }

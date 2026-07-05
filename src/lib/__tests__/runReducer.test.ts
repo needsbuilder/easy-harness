@@ -36,6 +36,13 @@ describe("runReducer", () => {
     expect(s.waitingSecret).toBe("api_key");
   });
 
+  it("terminal 상태가 세션 id를 노출하고 다음 running에서 닫힌다", () => {
+    let s = runReducer(initialRunState("mock-tool"), ev({ status: { kind: "terminal", sessionId: "r-pty-0" } }));
+    expect(s.terminalSession).toBe("r-pty-0");
+    s = runReducer(s, ev({ status: { kind: "running" } }));
+    expect(s.terminalSession).toBeNull();
+  });
+
   it("succeeded는 (stepIndex+1)/totalSteps 퍼센트 공식을 쓴다", () => {
     const s = runReducer(
       initialRunState("mock-tool"),

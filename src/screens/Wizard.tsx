@@ -5,6 +5,7 @@ import { LogPanel } from "../components/LogPanel";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { MascotBubble } from "../components/MascotBubble";
 import { SecretForm } from "../components/SecretForm";
+import { TerminalPanel } from "../components/TerminalPanel";
 import { WizardStepper } from "../components/WizardStepper";
 import { getDryRun, onLog, onProgress, provideSecret, startFlow } from "../lib/ipc";
 import { appendLog, initialRunState, runReducer, type RunState } from "../lib/runReducer";
@@ -77,6 +78,14 @@ export function Wizard() {
             onRetry={() => setAttempt((n) => n + 1)}
             onCopyLog={() => navigator.clipboard.writeText(state.logs.join("\n"))}
           />
+        ) : state.terminalSession ? (
+          <>
+            <h1 className="text-display font-extrabold">아래 까만 창에서 로그인을 도와드릴게요</h1>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+              <TerminalPanel sessionId={state.terminalSession} />
+              <AuthGuidePanel guide={auth?.guide ?? []} />
+            </div>
+          </>
         ) : state.waitingSecret ? (
           <>
             <h1 className="text-display font-extrabold">열쇠 하나만 등록하면 돼요</h1>
