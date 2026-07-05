@@ -1,4 +1,5 @@
 pub mod error;
+pub mod probe;
 pub mod recipe;
 pub mod runner;
 pub mod state;
