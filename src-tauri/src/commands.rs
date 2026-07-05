@@ -214,10 +214,12 @@ pub fn start_flow(
         } else {
             let process = TokioProcessRunner;
             let opener = PluginUrlOpener { app: app.clone() };
+            let downloader = crate::runner::download::ReqwestDownloader;
             let deps = RunDeps {
                 process: &process,
                 emitter: &emitter,
                 opener: &opener,
+                downloader: &downloader,
                 vault: SecretVault::new(),
             };
             run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx)

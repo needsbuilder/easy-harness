@@ -1,3 +1,4 @@
+pub mod download;
 pub mod dry_run;
 pub mod events;
 pub mod process;
@@ -5,6 +6,7 @@ pub mod secrets;
 pub mod step_runner;
 
 use crate::recipe::schema::Step;
+use download::Downloader;
 use process::ProcessRunner;
 use secrets::SecretVault;
 use std::sync::Mutex;
@@ -44,6 +46,7 @@ pub async fn execute_step(
     runner: &impl ProcessRunner,
     vault: &SecretVault,
     opener: &impl UrlOpener,
+    downloader: &impl Downloader,
 ) -> StepOutcome {
     match step {
         Step::CheckCommand { command, args, .. } | Step::RunCommand { command, args, .. } => {
@@ -102,8 +105,46 @@ pub async fn execute_step(
                 }
             }
         }
-        // 마일스톤 3에서 배선 (download_run: reqwest 실행기, pty_session: tauri-plugin-pty)
-        Step::DownloadRun { .. } | Step::PtySession { .. } => StepOutcome::Unsupported,
+        Step::DownloadRun {
+            url,
+            file_name,
+            command,
+            args,
+            ..
+        } => {
+            let url = vault.substitute(url);
+            let dest = std::env::temp_dir().join(file_name);
+            if let Err(e) = downloader.download(&url, &dest).await {
+                return StepOutcome::Failure {
+                    message: "내려받는 중에 인터넷이 잠깐 끊겼어요. 다시 시도해 볼까요?".into(),
+                    log: vault.mask(&e),
+                };
+            }
+            let file = dest.to_string_lossy();
+            let command = vault.substitute(command).replace("{{file}}", &file);
+            let args: Vec<String> = args
+                .iter()
+                .map(|a| vault.substitute(a).replace("{{file}}", &file))
+                .collect();
+            match runner.run(&command, &args).await {
+                Ok(out) if out.exit_code == 0 => StepOutcome::Success {
+                    log: vault.mask(&format!("{}{}", out.stdout, out.stderr)),
+                },
+                Ok(out) => StepOutcome::Failure {
+                    message: "설치 프로그램이 잘 끝나지 않았어요. 다시 시도해 볼까요?".into(),
+                    log: vault.mask(&format!(
+                        "exit={}\n{}{}",
+                        out.exit_code, out.stdout, out.stderr
+                    )),
+                },
+                Err(e) => StepOutcome::Failure {
+                    message: "설치 프로그램을 시작하지 못했어요. 다시 시도해 볼까요?".into(),
+                    log: vault.mask(&e.to_string()),
+                },
+            }
+        }
+        // 마일스톤 3 후반(Task 14)에서 배선: pty_session은 run_plan이 직접 처리
+        Step::PtySession { .. } => StepOutcome::Unsupported,
     }
 }
 
@@ -133,17 +174,18 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![ok("done"), fail("boom")]);
         let vault = SecretVault::new();
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let step = Step::RunCommand {
             friendly: "설치 중".into(),
             command: "brew".into(),
             args: vec!["install".into()],
         };
         assert!(matches!(
-            execute_step(&step, &runner, &vault, &opener).await,
+            execute_step(&step, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Success { .. }
         ));
         assert!(matches!(
-            execute_step(&step, &runner, &vault, &opener).await,
+            execute_step(&step, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Failure { .. }
         ));
         assert_eq!(
@@ -158,13 +200,14 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![]);
         let vault = SecretVault::new();
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let step = Step::CheckCommand {
             friendly: "확인 중".into(),
             command: "ghost".into(),
             args: vec![],
         };
         let StepOutcome::Failure { message, .. } =
-            execute_step(&step, &runner, &vault, &opener).await
+            execute_step(&step, &runner, &vault, &opener, &downloader).await
         else {
             panic!("Failure여야 함");
         };
@@ -185,12 +228,13 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![]);
         let vault = SecretVault::new();
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         assert!(matches!(
-            execute_step(&good, &runner, &vault, &opener).await,
+            execute_step(&good, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Success { .. }
         ));
         assert!(matches!(
-            execute_step(&bad, &runner, &vault, &opener).await,
+            execute_step(&bad, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Failure { .. }
         ));
     }
@@ -218,13 +262,14 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![]);
         let vault = SecretVault::new();
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let step = Step::PtySession {
             friendly: "터미널".into(),
             command: "x".into(),
             args: vec![],
         };
         assert!(matches!(
-            execute_step(&step, &runner, &vault, &opener).await,
+            execute_step(&step, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Unsupported
         ));
     }
@@ -234,12 +279,13 @@ mod tests {
         let runner = FakeProcessRunner::new(vec![]);
         let opener = FakeUrlOpener::default();
         let vault = SecretVault::new();
+        let downloader = download::FakeDownloader::default();
         let step = Step::OpenUrl {
             friendly: "로그인 창".into(),
             url: "https://example.com".into(),
         };
         assert!(matches!(
-            execute_step(&step, &runner, &vault, &opener).await,
+            execute_step(&step, &runner, &vault, &opener, &downloader).await,
             StepOutcome::Success { .. }
         ));
         assert_eq!(opener.opened(), vec!["https://example.com".to_string()]);
@@ -249,19 +295,20 @@ mod tests {
     async fn input_secret_requests_when_missing_and_passes_when_present() {
         let runner = FakeProcessRunner::new(vec![]);
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let step = Step::InputSecret {
             friendly: "키를 넣어 주세요".into(),
             label: "api_key".into(),
         };
         let vault = SecretVault::new();
         assert!(matches!(
-            execute_step(&step, &runner, &vault, &opener).await,
+            execute_step(&step, &runner, &vault, &opener, &downloader).await,
             StepOutcome::NeedsSecret { .. }
         ));
         let mut vault2 = SecretVault::new();
         vault2.insert("api_key", "v");
         assert!(matches!(
-            execute_step(&step, &runner, &vault2, &opener).await,
+            execute_step(&step, &runner, &vault2, &opener, &downloader).await,
             StepOutcome::Success { .. }
         ));
     }
@@ -274,6 +321,7 @@ mod tests {
             stderr: String::new(),
         })]);
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let mut vault = SecretVault::new();
         vault.insert("api_key", "sk-live-1234");
         let step = Step::RunCommand {
@@ -281,7 +329,8 @@ mod tests {
             command: "tool".into(),
             args: vec!["--key={{secret:api_key}}".into()],
         };
-        let StepOutcome::Failure { log, .. } = execute_step(&step, &runner, &vault, &opener).await
+        let StepOutcome::Failure { log, .. } =
+            execute_step(&step, &runner, &vault, &opener, &downloader).await
         else {
             panic!("Failure여야 함");
         };
@@ -291,16 +340,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn download_run_downloads_then_runs_with_file_substituted() {
+        use crate::runner::download::FakeDownloader;
+        let runner = FakeProcessRunner::new(vec![ok("installed")]);
+        let vault = SecretVault::new();
+        let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::new(vec![Ok(())]);
+        let step = Step::DownloadRun {
+            friendly: "설치 파일을 내려받아 실행하고 있어요".into(),
+            url: "https://example.com/tool.pkg".into(),
+            file_name: "tool.pkg".into(),
+            command: "open".into(),
+            args: vec!["-W".into(), "{{file}}".into()],
+        };
+        let out = execute_step(&step, &runner, &vault, &opener, &downloader).await;
+        assert!(matches!(out, StepOutcome::Success { .. }));
+        let expected = std::env::temp_dir().join("tool.pkg");
+        assert_eq!(downloader.calls()[0].1, expected);
+        let (cmd, args) = &runner.calls()[0];
+        assert_eq!(cmd, "open");
+        assert_eq!(args[1], expected.to_string_lossy());
+    }
+
+    #[tokio::test]
+    async fn download_run_failure_is_friendly() {
+        use crate::runner::download::FakeDownloader;
+        let runner = FakeProcessRunner::new(vec![]);
+        let vault = SecretVault::new();
+        let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::new(vec![Err("연결 끊김".into())]);
+        let step = Step::DownloadRun {
+            friendly: "설치 파일을 내려받아 실행하고 있어요".into(),
+            url: "https://example.com/tool.pkg".into(),
+            file_name: "tool.pkg".into(),
+            command: "open".into(),
+            args: vec![],
+        };
+        let StepOutcome::Failure { message, .. } =
+            execute_step(&step, &runner, &vault, &opener, &downloader).await
+        else {
+            panic!("Failure여야 함");
+        };
+        assert_eq!(
+            message,
+            "내려받는 중에 인터넷이 잠깐 끊겼어요. 다시 시도해 볼까요?"
+        );
+        assert!(runner.calls().is_empty()); // 실패 시 실행하지 않는다
+    }
+
+    #[tokio::test]
     async fn open_url_substitutes_secret_and_masks_log() {
         let runner = FakeProcessRunner::new(vec![]);
         let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
         let mut vault = SecretVault::new();
         vault.insert("api_key", "tok-999");
         let step = Step::OpenUrl {
             friendly: "발급 페이지".into(),
             url: "https://x.test/issue?key={{secret:api_key}}".into(),
         };
-        let StepOutcome::Success { log } = execute_step(&step, &runner, &vault, &opener).await
+        let StepOutcome::Success { log } =
+            execute_step(&step, &runner, &vault, &opener, &downloader).await
         else {
             panic!("Success여야 함");
         };

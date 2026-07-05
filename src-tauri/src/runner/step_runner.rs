@@ -3,15 +3,17 @@ use tokio::sync::mpsc::Receiver;
 use crate::recipe::loader::Catalog;
 use crate::recipe::plan::{InstallPlan, PlannedStep, Section};
 use crate::recipe::schema::Platform;
+use crate::runner::download::Downloader;
 use crate::runner::events::{ProgressEmitter, ProgressEvent, StepStatus};
 use crate::runner::process::ProcessRunner;
 use crate::runner::secrets::SecretVault;
 use crate::runner::{execute_step, StepOutcome, UrlOpener};
 
-pub struct RunDeps<'a, P: ProcessRunner, E: ProgressEmitter, O: UrlOpener> {
+pub struct RunDeps<'a, P: ProcessRunner, E: ProgressEmitter, O: UrlOpener, D: Downloader> {
     pub process: &'a P,
     pub emitter: &'a E,
     pub opener: &'a O,
+    pub downloader: &'a D,
     pub vault: SecretVault,
 }
 
@@ -20,12 +22,12 @@ pub struct RunReport {
     pub failed_step: Option<ProgressEvent>,
 }
 
-pub async fn run_plan<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
+pub async fn run_plan<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener, D: Downloader>(
     plan: &InstallPlan,
     catalog: &Catalog,
     platform: Platform,
     run_id: &str,
-    mut deps: RunDeps<'_, P, E, O>,
+    mut deps: RunDeps<'_, P, E, O, D>,
     secret_rx: &mut Receiver<(String, String)>,
 ) -> RunReport {
     let total = plan.steps.len();
@@ -57,7 +59,14 @@ pub async fn run_plan<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
         };
         deps.emitter.progress(&ev(StepStatus::Running));
         loop {
-            let outcome = execute_step(&planned.step, deps.process, &deps.vault, deps.opener).await;
+            let outcome = execute_step(
+                &planned.step,
+                deps.process,
+                &deps.vault,
+                deps.opener,
+                deps.downloader,
+            )
+            .await;
             match outcome {
                 StepOutcome::Success { log } => {
                     deps.emitter.log(run_id, &log);
@@ -65,7 +74,7 @@ pub async fn run_plan<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
                     break;
                 }
                 StepOutcome::Unsupported => {
-                    // M2에서 미배선 스텝(download_run·pty_session)은 실실행 경로에 오면 실패로 처리
+                    // 아직 미배선 스텝(pty_session, Task 14에서 배선 예정)은 실실행 경로에 오면 실패로 처리
                     let failed = ev(StepStatus::Failed {
                         message: "이 단계는 아직 준비 중이에요.".into(),
                     });
@@ -133,12 +142,12 @@ pub async fn run_plan<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
 /// 실패한 레시피의 rollback 섹션을 best-effort 실행 (결과는 log로만, 이벤트 없음).
 /// 플랜과 같은 platform 인자를 쓴다 — 실행 OS 추측(Platform::current) 금지,
 /// 그래야 어느 CI 러너에서든 양쪽 플랫폼 플랜을 테스트할 수 있다.
-async fn rollback<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
+async fn rollback<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener, D: Downloader>(
     failed: &PlannedStep,
     catalog: &Catalog,
     platform: Platform,
     run_id: &str,
-    deps: &RunDeps<'_, P, E, O>,
+    deps: &RunDeps<'_, P, E, O, D>,
 ) {
     let Some(spec) = catalog
         .get(&failed.recipe_id)
@@ -149,7 +158,14 @@ async fn rollback<P: ProcessRunner, E: ProgressEmitter, O: UrlOpener>(
     for step in &spec.rollback {
         deps.emitter
             .log(run_id, &format!("정리 중: {}", step.friendly()));
-        let _ = execute_step(step, deps.process, &deps.vault, deps.opener).await;
+        let _ = execute_step(
+            step,
+            deps.process,
+            &deps.vault,
+            deps.opener,
+            deps.downloader,
+        )
+        .await;
     }
 }
 
@@ -159,6 +175,7 @@ mod tests {
     use crate::recipe::loader::Catalog;
     use crate::recipe::plan::{build_plan, Flow};
     use crate::recipe::schema::Platform;
+    use crate::runner::download::FakeDownloader;
     use crate::runner::events::{CollectingEmitter, StepStatus};
     use crate::runner::process::{FakeProcessRunner, ProcessOutput};
     use crate::runner::secrets::SecretVault;
@@ -183,11 +200,13 @@ mod tests {
         p: &'a FakeProcessRunner,
         e: &'a CollectingEmitter,
         o: &'a FakeUrlOpener,
-    ) -> RunDeps<'a, FakeProcessRunner, CollectingEmitter, FakeUrlOpener> {
+        d: &'a FakeDownloader,
+    ) -> RunDeps<'a, FakeProcessRunner, CollectingEmitter, FakeUrlOpener, FakeDownloader> {
         RunDeps {
             process: p,
             emitter: e,
             opener: o,
+            downloader: d,
             vault: SecretVault::new(),
         }
     }
@@ -201,13 +220,14 @@ mod tests {
         let process = FakeProcessRunner::new((0..6).map(|_| ok()).collect());
         let emitter = CollectingEmitter::default();
         let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
         let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
         let report = run_plan(
             &plan,
             &catalog,
             Platform::Mac,
             "run-1",
-            deps(&process, &emitter, &opener),
+            deps(&process, &emitter, &opener, &downloader),
             &mut rx,
         )
         .await;
@@ -234,13 +254,14 @@ mod tests {
         let process = FakeProcessRunner::new(vec![ok(), fail(), ok()]);
         let emitter = CollectingEmitter::default();
         let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
         let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
         let report = run_plan(
             &plan,
             &catalog,
             Platform::Mac,
             "run-2",
-            deps(&process, &emitter, &opener),
+            deps(&process, &emitter, &opener, &downloader),
             &mut rx,
         )
         .await;
@@ -263,13 +284,14 @@ mod tests {
         let process = FakeProcessRunner::new(vec![fail(), ok(), ok()]);
         let emitter = CollectingEmitter::default();
         let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
         let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
         let report = run_plan(
             &plan,
             &catalog,
             Platform::Mac,
             "run-3",
-            deps(&process, &emitter, &opener),
+            deps(&process, &emitter, &opener, &downloader),
             &mut rx,
         )
         .await;
@@ -298,6 +320,7 @@ mod tests {
         let process = FakeProcessRunner::new(vec![]);
         let emitter = CollectingEmitter::default();
         let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
         tx.send(("api_key".to_string(), "sk-1".to_string()))
             .await
@@ -307,7 +330,7 @@ mod tests {
             &catalog,
             Platform::Mac,
             "run-4",
-            deps(&process, &emitter, &opener),
+            deps(&process, &emitter, &opener, &downloader),
             &mut rx,
         )
         .await;
