@@ -154,6 +154,8 @@ pub enum Step {
         friendly: String,
         url: String,
         file_name: String,
+        /// 내려받은 뒤 실행할 명령. args와 command의 "{{file}}"이 파일 경로로 치환된다.
+        command: String,
         #[serde(default)]
         args: Vec<String>,
     },
@@ -282,5 +284,26 @@ mod tests {
     fn rejects_unknown_top_level_field() {
         let bad = VALID.replacen("\"id\"", "\"surprise\": true, \"id\"", 1);
         assert!(Recipe::parse(&bad).is_err());
+    }
+
+    #[test]
+    fn parses_download_run_with_command() {
+        let json = r#"{
+            "type": "download_run",
+            "friendly": "설치 파일을 내려받아 실행하고 있어요",
+            "url": "https://example.com/tool.pkg",
+            "file_name": "tool.pkg",
+            "command": "open",
+            "args": ["-W", "{{file}}"]
+        }"#;
+        let step: Step = serde_json::from_str(json).unwrap();
+        let Step::DownloadRun {
+            command, file_name, ..
+        } = &step
+        else {
+            panic!("DownloadRun이어야 함");
+        };
+        assert_eq!(command, "open");
+        assert_eq!(file_name, "tool.pkg");
     }
 }

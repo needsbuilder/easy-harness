@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "gajaecode",
+  "name": "가재코드",
+  "kind": "harness",
+  "easyDescription": "꼼꼼히 묻고 계획을 세운 뒤 코딩하는 한국산 AI 도우미예요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "supportedModels": [
+    { "modelLabel": "Claude", "accountLabel": "Claude 구독 또는 API 키" },
+    { "modelLabel": "GPT", "accountLabel": "ChatGPT 구독 또는 API 키" },
+    { "modelLabel": "Gemini 외 30여 가지", "accountLabel": "쓰려는 곳의 계정" }
+  ],
+  "recommended": false,
+  "requires": [],
+  "platforms": {
+    "mac": {
+      "prerequisites": ["bun"],
+      "detect": [
+        { "type": "check_command", "friendly": "가재코드가 이미 있는지 볼게요", "command": "{{home}}/.bun/bin/gjc", "args": ["--version"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "가재코드를 설치하고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["install", "-g", "gajae-code"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "{{home}}/.bun/bin/gjc", "args": ["--version"] }
+      ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [
+          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "{{home}}/.bun/bin/gjc auth-broker login anthropic"] }
+        ],
+        "guide": [
+          "잠시 뒤 인터넷 창이 자동으로 열려요",
+          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
+          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "가재코드 부품이 잘 도는지 확인하고 있어요", "command": "{{home}}/.bun/bin/gjc", "args": ["--smoke-test"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "가재코드를 새 버전으로 바꾸고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["install", "-g", "gajae-code"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "가재코드를 깨끗하게 지우고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["remove", "-g", "gajae-code"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "{{home}}/.bun/bin/bun", "args": ["remove", "-g", "gajae-code"] }
+      ]
+    },
+    "windows": {
+      "prerequisites": ["bun"],
+      "detect": [
+        { "type": "check_command", "friendly": "가재코드가 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" --version"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "가재코드를 설치하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" install -g gajae-code"] },
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" --version"] }
+      ],
+      "auth": {
+        "pattern": "browser_login",
+        "steps": [
+          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" auth-broker login anthropic"] }
+        ],
+        "guide": [
+          "잠시 뒤 인터넷 창이 자동으로 열려요",
+          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
+          "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "가재코드 부품이 잘 도는지 확인하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\gjc\" --smoke-test"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "가재코드를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" install -g gajae-code"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "가재코드를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" remove -g gajae-code"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" remove -g gajae-code"] }
+      ]
+    }
+  }
+}

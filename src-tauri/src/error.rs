@@ -10,6 +10,8 @@ pub enum EngineError {
     DependencyCycle(Vec<String>),
     #[error("{recipe} 레시피는 {platform}을 지원하지 않아요")]
     PlatformUnsupported { recipe: String, platform: String },
+    #[error("레시피 서명이 올바르지 않아요: {0}")]
+    SignatureInvalid(String),
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }

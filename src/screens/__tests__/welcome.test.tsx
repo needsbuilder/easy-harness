@@ -25,4 +25,19 @@ describe("환영 화면", () => {
     expect(screen.getByText(/맥에서 사용할 수 있어요/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "도구 고르러 가기" })).toBeInTheDocument();
   });
+
+  it("진단 실패 시 안내와 다시 점검 버튼을 보여준다", async () => {
+    let calls = 0;
+    mockIPC((cmd) => {
+      if (cmd === "get_env_report") {
+        calls += 1;
+        if (calls === 1) throw new Error("ipc down");
+        return { os: "mac", osLabel: "맥", arch: "aarch64", checks: [], missingCount: 0 };
+      }
+    });
+    render(<MemoryRouter><Welcome /></MemoryRouter>);
+    expect(await screen.findByText(/점검이 잠깐 안 됐어요/)).toBeInTheDocument();
+    screen.getByRole("button", { name: "다시 점검하기" }).click();
+    expect(await screen.findByText(/준비물도 모두 갖춰져 있어요/)).toBeInTheDocument();
+  });
 });
