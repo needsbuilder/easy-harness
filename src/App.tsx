@@ -1,50 +1,30 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { HashRouter, Navigate, Route, Routes } from "react-router";
+import { AppShell } from "./components/AppShell";
+import { Auth } from "./screens/Auth";
+import { Catalog } from "./screens/Catalog";
+import { Dashboard } from "./screens/Dashboard";
+import { Plugins } from "./screens/Plugins";
+import { Settings } from "./screens/Settings";
+import { Success } from "./screens/Success";
+import { Welcome } from "./screens/Welcome";
+import { Wizard } from "./screens/Wizard";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
+export default function App() {
   return (
-    <main className="min-h-screen bg-surface-bg dark:bg-surface-bg-dark">
-      <h1 className="text-display font-extrabold text-txt-primary">이지 하네스</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/welcome" replace />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/wizard/:toolId" element={<Wizard />} />
+        <Route path="/auth/:toolId" element={<Auth />} />
+        <Route path="/success/:toolId" element={<Success />} />
+        <Route element={<AppShell />}>
+          <Route path="/catalog" element={<Catalog />} />
+          <Route path="/plugins" element={<Plugins />} />
+          <Route path="/tools" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   );
 }
-
-export default App;
