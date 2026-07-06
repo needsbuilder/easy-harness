@@ -25,4 +25,9 @@ describe("Success", () => {
     renderAt({ pathname: "/success/gajaecode" });
     expect(screen.getByText("gajaecode 준비 완료!")).toBeInTheDocument();
   });
+
+  it("함께 설치한 도구가 있으면 같이 보여준다", () => {
+    renderAt({ pathname: "/success/lazycodex", state: { name: "lazycodex", helpers: ["Codex", "Node.js"] } });
+    expect(screen.getByText(/Codex·Node.js도 함께 준비했어요/)).toBeInTheDocument();
+  });
 });
