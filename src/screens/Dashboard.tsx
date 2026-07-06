@@ -99,7 +99,9 @@ export function Dashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">{nameOf(i.recipeId)}</p>
                   {i.version ? (
-                    <p className="font-mono text-caption text-txt-tertiary">v{i.version}</p>
+                    <p className="text-caption text-txt-tertiary">
+                      <span className="font-mono">v{i.version}</span> · {formatInstalledAt(i.installedAt)}
+                    </p>
                   ) : (
                     <p className="text-caption text-txt-tertiary">{formatInstalledAt(i.installedAt)}</p>
                   )}
