@@ -1,11 +1,60 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { MemoryRouter } from "react-router";
 import { Dashboard } from "../Dashboard";
+import type { CatalogEntry, Installation } from "../../lib/types";
+
+function MemoryRouterWrapper({ children }: { children: React.ReactNode }) {
+  return <MemoryRouter>{children}</MemoryRouter>;
+}
+
+function inst(recipeId: string, overrides: Partial<Installation> = {}): Installation {
+  return { recipeId, version: "1.0.0", installedAt: 1, authDone: true, verifiedAt: 2, ...overrides };
+}
+
+function harness(overrides: Partial<CatalogEntry> & { id: string; name: string }): CatalogEntry {
+  return {
+    kind: "harness",
+    easyDescription: "",
+    pricing: { label: "무료", kind: "free" },
+    supportedModels: [],
+    recommended: false,
+    requires: [],
+    installed: false,
+    installedVersion: null,
+    missingRequires: [],
+    platforms: ["mac", "windows"],
+    available: true,
+    source: null,
+    ...overrides,
+  };
+}
+
+function plugin(overrides: Partial<CatalogEntry> & { id: string; name: string }): CatalogEntry {
+  return {
+    kind: "plugin",
+    easyDescription: "",
+    pricing: { label: "무료", kind: "free" },
+    supportedModels: [],
+    recommended: false,
+    requires: [],
+    installed: false,
+    installedVersion: null,
+    missingRequires: [],
+    platforms: ["mac", "windows"],
+    available: true,
+    source: null,
+    ...overrides,
+  };
+}
 
 describe("내 도구", () => {
-  afterEach(() => clearMocks());
+  afterEach(() => {
+    cleanup();
+    clearMocks();
+    vi.restoreAllMocks();
+  });
 
   it("설치 목록과 버전을 보여준다", async () => {
     mockIPC((cmd) => {
@@ -73,5 +122,23 @@ describe("내 도구", () => {
     await waitFor(() => expect(startFlowCalls).toBe(1));
     expect(button).toBeDisabled();
     expect(screen.getByRole("button", { name: "지우는 중" })).toBeInTheDocument();
+  });
+
+  it("플러그인이 얹혀 있는 하네스를 지울 때 경고를 함께 보여준다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") {
+        return { installations: [inst("codex"), inst("lazycodex")] };
+      }
+      if (cmd === "list_catalog") {
+        return [
+          harness({ id: "codex", name: "Codex", installed: true }),
+          plugin({ id: "lazycodex", name: "lazycodex", requires: ["codex"], installed: true }),
+        ];
+      }
+    });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<Dashboard />, { wrapper: MemoryRouterWrapper });
+    fireEvent.click((await screen.findAllByText("삭제"))[0]);
+    expect(confirmSpy.mock.calls[0][0]).toContain("lazycodex도 함께 멈출 수 있어요");
   });
 });

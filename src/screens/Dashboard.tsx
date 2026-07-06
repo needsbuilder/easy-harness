@@ -24,7 +24,13 @@ export function Dashboard() {
 
   const uninstall = async (id: string) => {
     if (removing.has(id)) return;
-    if (!window.confirm(`${nameOf(id)}을(를) 지울까요? 설정과 기록도 함께 정리돼요.`)) return;
+    const dependents = catalog
+      .filter((c) => c.installed && c.requires.includes(id))
+      .map((c) => c.name);
+    const warning = dependents.length > 0
+      ? `이 도구를 지우면 위에 얹혀 있는 ${dependents.join("·")}도 함께 멈출 수 있어요. `
+      : "";
+    if (!window.confirm(`${warning}${nameOf(id)}을(를) 지울까요? 설정과 기록도 함께 정리돼요.`)) return;
     setRemoving((s) => new Set(s).add(id));
     try {
       const runId = await startFlow(id, "uninstall", false);
