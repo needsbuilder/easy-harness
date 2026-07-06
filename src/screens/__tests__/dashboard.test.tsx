@@ -75,6 +75,36 @@ describe("내 도구", () => {
     expect(screen.getByText(/설치한 도구는 1개예요/)).toBeInTheDocument();
   });
 
+  it("버전을 모르면 물음표 대신 설치한 날짜를 보여준다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") {
+        return { installations: [inst("mock-tool", { version: null, installedAt: 1783323963 })] };
+      }
+      if (cmd === "list_catalog") {
+        return [harness({ id: "mock-tool", name: "모의 도구", installed: true })];
+      }
+    });
+    render(<Dashboard />, { wrapper: MemoryRouterWrapper });
+    await screen.findByText("모의 도구");
+    expect(screen.queryByText("v?")).not.toBeInTheDocument();
+    expect(screen.getByText(/설치했어요/)).toBeInTheDocument();
+  });
+
+  it("새 버전 확인 기능이 생기기 전에는 최신 상태 배지와 매일 확인 문구를 보여주지 않는다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") {
+        return { installations: [inst("mock-tool")] };
+      }
+      if (cmd === "list_catalog") {
+        return [harness({ id: "mock-tool", name: "모의 도구", installed: true })];
+      }
+    });
+    render(<Dashboard />, { wrapper: MemoryRouterWrapper });
+    await screen.findByText("모의 도구");
+    expect(screen.queryByText("최신 상태예요")).not.toBeInTheDocument();
+    expect(screen.queryByText(/매일 새 버전/)).not.toBeInTheDocument();
+  });
+
   it("빈 목록이면 카탈로그로 안내한다", async () => {
     mockIPC((cmd) => {
       if (cmd === "get_app_state") return { installations: [] };

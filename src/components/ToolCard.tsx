@@ -54,7 +54,7 @@ export function ToolCard({ entry, onSelect, resolveName }: {
       )}
       {entry.installed && (
         <p className="mt-3 text-caption text-txt-tertiary font-mono">
-          설치됨 · v{entry.installedVersion ?? "?"}
+          {entry.installedVersion ? `설치됨 · v${entry.installedVersion}` : "설치됨"}
         </p>
       )}
     </button>
