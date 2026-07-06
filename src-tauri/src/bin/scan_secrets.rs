@@ -14,6 +14,9 @@ const PATTERNS: &[(&str, &[u8], usize)] = &[
     ("GitHub-토큰-gho", b"gho_", 30),
 ];
 const FORBIDDEN_FILE_NAMES: &[&str] = &["recipe-signing-secret.key"];
+/// 디렉터리 순회·파일 읽기가 실패했을 때 쓰는 마커. 스캔이 못 본 경로가 있으면
+/// "통과"와 구분되지 않는 무음 스킵을 막기 위해 이것도 report에 넣어 exit 1로 이어지게 한다.
+const READ_FAILURE: &str = "읽기 실패(스캔 불완전)";
 
 fn is_token_byte(b: u8) -> bool {
     // '-'도 포함: 실제 Anthropic 키(sk-ant-api03-...)는 버전 구분에 하이픈을 쓴다
@@ -39,8 +42,18 @@ pub fn find_hits(data: &[u8]) -> Vec<&'static str> {
 
 fn scan_path(path: &Path, report: &mut Vec<(String, &'static str)>, count: &mut usize) {
     if path.is_dir() {
-        for entry in std::fs::read_dir(path).into_iter().flatten().flatten() {
-            scan_path(&entry.path(), report, count);
+        // read_dir 자체 실패, 또는 순회 도중 특정 DirEntry 획득 실패도 무음으로 넘기지 않는다.
+        // 이걸 조용히 건너뛰면 "일부를 못 봐서 통과"와 "정말 클린해서 통과"가 구분 안 됨.
+        match std::fs::read_dir(path) {
+            Ok(entries) => {
+                for entry in entries {
+                    match entry {
+                        Ok(entry) => scan_path(&entry.path(), report, count),
+                        Err(_) => report.push((path.display().to_string(), READ_FAILURE)),
+                    }
+                }
+            }
+            Err(_) => report.push((path.display().to_string(), READ_FAILURE)),
         }
         return;
     }
@@ -48,11 +61,14 @@ fn scan_path(path: &Path, report: &mut Vec<(String, &'static str)>, count: &mut 
     if FORBIDDEN_FILE_NAMES.contains(&name) {
         report.push((path.display().to_string(), "금지 파일명(레시피 개인키)"));
     }
-    if let Ok(data) = std::fs::read(path) {
-        *count += 1;
-        for hit in find_hits(&data) {
-            report.push((path.display().to_string(), hit));
+    match std::fs::read(path) {
+        Ok(data) => {
+            *count += 1;
+            for hit in find_hits(&data) {
+                report.push((path.display().to_string(), hit));
+            }
         }
+        Err(_) => report.push((path.display().to_string(), READ_FAILURE)),
     }
 }
 
@@ -122,5 +138,52 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
         assert_eq!(report.len(), 1);
         assert!(report[0].1.contains("금지 파일명"));
+    }
+
+    #[test]
+    fn nonexistent_path_is_reported_as_read_failure_not_silently_skipped() {
+        // 스캔 대상 경로 자체가 없는 경우: is_dir()==false → 파일 읽기 분기로 빠지는데,
+        // fs::read 실패가 무음으로 넘어가면 "파일 0개 검사, 통과"가 나와버린다(결함 재현).
+        let missing =
+            std::env::temp_dir().join(format!("scan-test-missing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&missing);
+        assert!(!missing.exists());
+
+        let mut report = Vec::new();
+        let mut count = 0;
+        scan_path(&missing, &mut report, &mut count);
+
+        assert_eq!(count, 0, "읽지 못한 경로는 검사 카운트에 들어가면 안 됨");
+        assert_eq!(
+            report.len(),
+            1,
+            "읽기 실패가 report에 기록돼야 exit 0을 막을 수 있음"
+        );
+        assert!(report[0].1.contains("읽기 실패"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unreadable_file_is_reported_as_read_failure_not_silently_skipped() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("scan-test-perm-file-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("secret.bin");
+        std::fs::write(&file, b"data").unwrap();
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+        let mut report = Vec::new();
+        let mut count = 0;
+        scan_path(&dir, &mut report, &mut count);
+
+        // 정리는 검증 전에 권한부터 복구(그래야 remove_dir_all이 확실히 성공함)
+        let _ = std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644));
+        std::fs::remove_dir_all(&dir).unwrap();
+
+        // root로 테스트가 돌면 0o000이어도 읽혀버려 count==1이 됨 → 이 환경에서는 검증 스킵
+        if count == 0 {
+            assert_eq!(report.len(), 1);
+            assert!(report[0].1.contains("읽기 실패"));
+        }
     }
 }
