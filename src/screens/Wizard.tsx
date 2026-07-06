@@ -21,6 +21,7 @@ export function Wizard() {
   const [showLog, setShowLog] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
+  const [secretSubmitting, setSecretSubmitting] = useState(false);
 
   const tools = preview?.tools ?? [];
   const target = tools.find((t) => t.id === toolId);
@@ -84,6 +85,11 @@ export function Wizard() {
     }
   }, [state.done, state.success, navigate, toolId, toolName, helperNames]);
 
+  // waitingSecret이 바뀌면(해소되거나 재시도로 리셋되면) 제출 잠금을 푼다.
+  useEffect(() => {
+    setSecretSubmitting(false);
+  }, [state.waitingSecret]);
+
   const preflight = preview !== null && needsPreflight && !confirmed && !state.error;
 
   return (
@@ -131,7 +137,11 @@ export function Wizard() {
             <AuthGuidePanel guide={currentAuth?.guide ?? []} />
             <SecretForm
               label={state.waitingSecret}
-              onSubmit={(value) => runId && provideSecret(runId, state.waitingSecret as string, value)}
+              submitting={secretSubmitting}
+              onSubmit={(value) => {
+                setSecretSubmitting(true);
+                runId && provideSecret(runId, state.waitingSecret as string, value);
+              }}
             />
           </>
         ) : (
