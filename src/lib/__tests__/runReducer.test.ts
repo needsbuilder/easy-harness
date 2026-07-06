@@ -58,6 +58,15 @@ describe("runReducer", () => {
     s = runReducer(s, ev({ recipeId: "mock-tool", section: "detect", stepIndex: 2 }));
     expect(s.phase).toBe(2); // 버그 시 1로 후퇴
   });
+
+  it("진행 이벤트의 recipeId를 currentRecipeId로 추적한다", () => {
+    let s = initialRunState("mock-plugin");
+    expect(s.currentRecipeId).toBe("mock-plugin");
+    s = runReducer(s, ev({ recipeId: "mock-tool", status: { kind: "running" } }));
+    expect(s.currentRecipeId).toBe("mock-tool");
+    s = runReducer(s, ev({ recipeId: "mock-plugin", status: { kind: "running" } }));
+    expect(s.currentRecipeId).toBe("mock-plugin");
+  });
 });
 
 describe("appendLog", () => {

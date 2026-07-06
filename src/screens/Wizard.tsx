@@ -9,7 +9,7 @@ import { TerminalPanel } from "../components/TerminalPanel";
 import { WizardStepper } from "../components/WizardStepper";
 import { getDryRun, onLog, onProgress, provideSecret, startFlow } from "../lib/ipc";
 import { appendLog, initialRunState, runReducer, type RunState } from "../lib/runReducer";
-import type { DryRunAuth } from "../lib/types";
+import type { DryRunAuth, DryRunTool } from "../lib/types";
 
 export function Wizard() {
   const { toolId = "" } = useParams();
@@ -18,7 +18,7 @@ export function Wizard() {
   const [toolName, setToolName] = useState(toolId);
   const [showLog, setShowLog] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [auth, setAuth] = useState<DryRunAuth | null>(null);
+  const [tools, setTools] = useState<DryRunTool[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
 
   // 시작 가드: StrictMode(dev)의 mount→cleanup→mount 이중 호출에서도 같은 컴포넌트
@@ -26,7 +26,7 @@ export function Wizard() {
   // 재사용해 실제 설치(startFlow)가 두 번 시작되지 않는다. 재시도(attempt)나 도구
   // 변경은 key가 달라져 새로 시작한다. 구독(onProgress/onLog)은 이펙트 인스턴스마다
   // 다시 붙고, cancelled 가드로 실제로 살아남는 인스턴스만 구독을 유지한다.
-  const startRef = useRef<{ key: string; promise: Promise<{ runId: string; auth: DryRunAuth | null; toolName: string }> } | null>(null);
+  const startRef = useRef<{ key: string; promise: Promise<{ runId: string; tools: DryRunTool[]; toolName: string }> } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,17 +42,16 @@ export function Wizard() {
           const preview = await getDryRun(toolId);
           const target = preview.steps.find((s) => s.recipeId === toolId);
           const newRunId = await startFlow(toolId, "install", false);
-          const toolAuth = preview.tools.find((t) => t.id === toolId)?.auth ?? null;
-          return { runId: newRunId, auth: toolAuth, toolName: target?.recipeName ?? toolId };
+          return { runId: newRunId, tools: preview.tools, toolName: target?.recipeName ?? toolId };
         })(),
       };
     }
     (async () => {
       try {
-        const { runId: newRunId, auth: newAuth, toolName: newToolName } = await startRef.current!.promise;
+        const { runId: newRunId, tools: newTools, toolName: newToolName } = await startRef.current!.promise;
         if (cancelled) return;
         setToolName(newToolName);
-        setAuth(newAuth);
+        setTools(newTools);
         setRunId(newRunId);
         const p = await onProgress(newRunId, (ev) => setState((s) => runReducer(s, ev)));
         if (cancelled) { p(); return; }
@@ -78,9 +77,12 @@ export function Wizard() {
     if (state.done && state.success) navigate(`/success/${toolId}`, { state: { name: toolName } });
   }, [state.done, state.success, navigate, toolId, toolName]);
 
+  const currentAuth: DryRunAuth | null = tools.find((t) => t.id === state.currentRecipeId)?.auth ?? null;
+  const helperNames = tools.filter((t) => t.id !== toolId).map((t) => t.name);
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-surface-bg dark:bg-surface-bg-dark px-8 py-12">
-      <WizardStepper current={state.phase} toolName={toolName} />
+      <WizardStepper current={state.phase} toolName={toolName} helperNames={helperNames} />
       <div className={`mt-12 w-full ${state.terminalSession ? "max-w-5xl" : "max-w-2xl"} text-center`}>
         {state.error ? (
           <ErrorPanel
@@ -94,13 +96,13 @@ export function Wizard() {
             <h1 className="text-display font-extrabold">아래 까만 창에서 로그인을 도와드릴게요</h1>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
               <TerminalPanel sessionId={state.terminalSession} />
-              <AuthGuidePanel guide={auth?.guide ?? []} stacked />
+              <AuthGuidePanel guide={currentAuth?.guide ?? []} stacked />
             </div>
           </>
         ) : state.waitingSecret ? (
           <>
             <h1 className="text-display font-extrabold">열쇠 하나만 등록하면 돼요</h1>
-            <AuthGuidePanel guide={auth?.guide ?? []} />
+            <AuthGuidePanel guide={currentAuth?.guide ?? []} />
             <SecretForm
               label={state.waitingSecret}
               onSubmit={(value) => runId && provideSecret(runId, state.waitingSecret as string, value)}
@@ -121,7 +123,7 @@ export function Wizard() {
               </button>
             </div>
             <LogPanel lines={state.logs} visible={showLog} />
-            {state.section === "auth" && <AuthGuidePanel guide={auth?.guide ?? []} />}
+            {state.section === "auth" && <AuthGuidePanel guide={currentAuth?.guide ?? []} />}
             <div className="mt-10 flex justify-center">
               <MascotBubble text="제가 근두운 타고 후딱 받아오는 중이에요. 커피 한 잔 하고 오세요!" />
             </div>

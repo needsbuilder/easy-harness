@@ -1,5 +1,8 @@
-export function WizardStepper({ current, toolName }: { current: 1 | 2 | 3 | 4; toolName: string }) {
-  const labels = ["컴퓨터 점검", "준비물 설치", `${toolName} 설치`, "마무리"];
+export function WizardStepper({ current, toolName, helperNames = [] }: {
+  current: 1 | 2 | 3 | 4; toolName: string; helperNames?: string[];
+}) {
+  const helperLabel = helperNames.length > 0 ? `${helperNames.join("·")} 설치` : "준비물 설치";
+  const labels = ["컴퓨터 점검", helperLabel, `${toolName} 설치`, "마무리"];
   return (
     <ol className="flex items-center justify-center gap-3">
       {labels.map((label, i) => {
