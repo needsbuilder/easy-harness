@@ -239,3 +239,48 @@ fn im_not_ai_recipe_installs_humanize_korean_plugin() {
         );
     }
 }
+
+#[test]
+fn k_skill_recipe_uses_skills_cli_with_full_set() {
+    let cat = catalog();
+    let r = cat.get("k-skill").expect("k-skill 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    let plan = build_plan(&cat, "k-skill", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(
+        plan.tool_order,
+        vec!["claude-code", "nodejs-lts", "k-skill"]
+    );
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(spec.auth.is_none(), "{p:?}");
+        let install = format!("{:?}", spec.install);
+        assert!(
+            install.contains("skills add NomaDamas/k-skill --all -g -y -a claude-code"),
+            "{p:?}"
+        );
+        let un = format!("{:?}", spec.uninstall);
+        assert!(un.contains("skills remove"), "{p:?}");
+        assert!(un.contains("lotto-results"), "{p:?}: 이름 명시 제거 목록");
+        assert!(un.contains("-g -y"), "{p:?}");
+    }
+}
+
+#[test]
+fn catalog_is_complete_after_m4() {
+    let cat = catalog();
+    assert_eq!(cat.recipes.len(), 13, "하네스 6 + 플러그인 5 + 준비물 2");
+    let count = |k: ToolKind| cat.recipes.iter().filter(|r| r.kind == k).count();
+    assert_eq!(count(ToolKind::Harness), 6);
+    assert_eq!(count(ToolKind::Plugin), 5);
+    assert_eq!(count(ToolKind::Prerequisite), 2);
+    // 플러그인 5종 공통 계약: requires 비어 있지 않고, 제3자 오픈소스라 source 표기 필수
+    for r in cat.recipes.iter().filter(|r| r.kind == ToolKind::Plugin) {
+        assert!(
+            !r.requires.is_empty(),
+            "{}: 플러그인은 대상 하네스 필요",
+            r.id
+        );
+        assert!(r.source.is_some(), "{}: 제작자 표기 필요", r.id);
+    }
+}
