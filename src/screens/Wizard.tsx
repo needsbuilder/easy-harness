@@ -9,6 +9,7 @@ import { SecretForm } from "../components/SecretForm";
 import { TerminalPanel } from "../components/TerminalPanel";
 import { WizardStepper } from "../components/WizardStepper";
 import { getDryRun, onLog, onProgress, provideSecret, startFlow } from "../lib/ipc";
+import { eunNeun } from "../lib/josa";
 import { appendLog, initialRunState, runReducer, type RunState } from "../lib/runReducer";
 import type { DryRunReport } from "../lib/types";
 
@@ -107,7 +108,7 @@ export function Wizard() {
           <>
             <h1 className="text-display font-extrabold">먼저 챙길 게 있어요</h1>
             <p className="mt-4 text-txt-secondary dark:text-txt-secondary-dark">
-              {toolName}는 {pendingHarnesses.map((t) => t.name).join("·")} 위에서 도는 도구예요.
+              {toolName}{eunNeun(toolName)} {pendingHarnesses.map((t) => t.name).join("·")} 위에서 도는 도구예요.
               아래 순서대로 한 번에 진행할게요.
             </p>
             <ol className="mx-auto mt-6 flex w-fit flex-col gap-2 text-left font-bold">

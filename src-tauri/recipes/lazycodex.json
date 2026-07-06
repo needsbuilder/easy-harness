@@ -39,7 +39,7 @@
         { "type": "run_command", "friendly": "LazyCodex를 Codex에 붙이고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai@latest install --no-tui"] }
       ],
       "verify": [
-        { "type": "check_command", "friendly": "잘 붙었는지 확인하고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai doctor"] }
+        { "type": "path_check", "friendly": "잘 붙었는지 확인하고 있어요", "path": "{{home}}/.local/bin/omo" }
       ],
       "update": [
         { "type": "run_command", "friendly": "LazyCodex를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai@latest install --no-tui"] }
