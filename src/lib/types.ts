@@ -4,12 +4,14 @@ export type FlowKind = "install" | "update" | "uninstall";
 
 export interface Pricing { label: string; kind: "free" | "paid" | "freemium" }
 export interface ModelBadge { modelLabel: string; accountLabel?: string | null }
+export interface SourceInfo { label: string; url?: string | null }
 
 export interface CatalogEntry {
   id: string; name: string; kind: ToolKind; easyDescription: string;
   pricing: Pricing; supportedModels: ModelBadge[]; recommended: boolean;
   requires: string[]; installed: boolean; installedVersion: string | null;
-  missingRequires: string[];
+  missingRequires: string[]; source?: SourceInfo | null;
+  platforms: Platform[]; available: boolean;
 }
 
 export interface EnvCheck { id: string; label: string; found: boolean; version: string | null }
@@ -24,9 +26,12 @@ export interface DryRunAuth {
   pattern: "browser_login" | "api_key" | "interactive_terminal" | "automatic";
   guide: string[];
 }
+export interface DryRunTool {
+  id: string; name: string; kind: ToolKind; auth: DryRunAuth | null;
+}
 export interface DryRunReport {
-  targetId: string; platform: string; toolOrder: string[]; steps: DryRunStep[];
-  auth: DryRunAuth | null;
+  targetId: string; platform: string; toolOrder: string[];
+  tools: DryRunTool[]; steps: DryRunStep[];
 }
 
 export type StepStatus =
