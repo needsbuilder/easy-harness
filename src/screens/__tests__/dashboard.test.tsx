@@ -141,4 +141,24 @@ describe("내 도구", () => {
     fireEvent.click((await screen.findAllByText("삭제"))[0]);
     expect(confirmSpy.mock.calls[0][0]).toContain("lazycodex도 함께 멈출 수 있어요");
   });
+
+  it("설치되지 않은 플러그인은 삭제 경고에서 제외한다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") {
+        return { installations: [inst("codex"), inst("lazycodex")] };
+      }
+      if (cmd === "list_catalog") {
+        return [
+          harness({ id: "codex", name: "Codex", installed: true }),
+          plugin({ id: "lazycodex", name: "lazycodex", requires: ["codex"], installed: true }),
+          plugin({ id: "insane-search", name: "insane-search", requires: ["codex"], installed: false }),
+        ];
+      }
+    });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<Dashboard />, { wrapper: MemoryRouterWrapper });
+    fireEvent.click((await screen.findAllByText("삭제"))[0]);
+    expect(confirmSpy.mock.calls[0][0]).toContain("lazycodex도 함께 멈출 수 있어요");
+    expect(confirmSpy.mock.calls[0][0]).not.toContain("insane-search");
+  });
 });
