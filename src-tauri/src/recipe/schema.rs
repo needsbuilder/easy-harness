@@ -17,6 +17,8 @@ pub struct Recipe {
     pub recommended: bool,
     #[serde(default)]
     pub requires: Vec<String>,
+    #[serde(default)]
+    pub source: Option<SourceInfo>,
     pub platforms: Platforms,
 }
 
@@ -26,6 +28,25 @@ pub enum ToolKind {
     Harness,
     Plugin,
     Prerequisite,
+}
+
+impl ToolKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ToolKind::Harness => "harness",
+            ToolKind::Plugin => "plugin",
+            ToolKind::Prerequisite => "prerequisite",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SourceInfo {
+    /// 카드에 그대로 보여줄 제작자 표기 (예: "만든 곳: NomaDamas")
+    pub label: String,
+    #[serde(default)]
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -286,6 +307,28 @@ mod tests {
     fn rejects_unknown_top_level_field() {
         let bad = VALID.replacen("\"id\"", "\"surprise\": true, \"id\"", 1);
         assert!(Recipe::parse(&bad).is_err());
+    }
+
+    #[test]
+    fn parses_optional_source_and_defaults_to_none() {
+        let with = VALID.replacen(
+            "\"id\"",
+            "\"source\": { \"label\": \"만든 곳: 모의연구소\", \"url\": \"https://example.com\" }, \"id\"",
+            1,
+        );
+        let r = Recipe::parse(&with).unwrap();
+        let s = r.source.expect("source 파싱돼야 함");
+        assert_eq!(s.label, "만든 곳: 모의연구소");
+        assert_eq!(s.url.as_deref(), Some("https://example.com"));
+        // 없으면 None (기존 레시피 8종 하위 호환)
+        assert!(Recipe::parse(VALID).unwrap().source.is_none());
+    }
+
+    #[test]
+    fn tool_kind_as_str_matches_wire_format() {
+        assert_eq!(ToolKind::Harness.as_str(), "harness");
+        assert_eq!(ToolKind::Plugin.as_str(), "plugin");
+        assert_eq!(ToolKind::Prerequisite.as_str(), "prerequisite");
     }
 
     #[test]

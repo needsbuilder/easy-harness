@@ -31,6 +31,9 @@ export function ToolCard({ entry, onSelect }: { entry: CatalogEntry; onSelect: (
           <Badge key={id} variant="warning">{id} 필요</Badge>
         ))}
       </div>
+      {entry.source && (
+        <p className="mt-3 text-caption text-txt-tertiary">{entry.source.label}</p>
+      )}
       {entry.installed && (
         <p className="mt-3 text-caption text-txt-tertiary font-mono">
           설치됨 · v{entry.installedVersion ?? "?"}

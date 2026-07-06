@@ -12,7 +12,7 @@ use crate::error::EngineError;
 use crate::probe::{probe_env, EnvReport};
 use crate::recipe::loader::Catalog;
 use crate::recipe::plan::{build_plan, Flow};
-use crate::recipe::schema::{Platform, ToolKind};
+use crate::recipe::schema::Platform;
 use crate::runner::dry_run::{dry_run, DryRunReport};
 use crate::runner::events::{ProgressEmitter, ProgressEvent, StepStatus};
 use crate::runner::process::TokioProcessRunner;
@@ -53,6 +53,7 @@ pub struct CatalogEntry {
     pub installed: bool,
     pub installed_version: Option<String>,
     pub missing_requires: Vec<String>,
+    pub source: Option<crate::recipe::schema::SourceInfo>,
 }
 
 pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEntry> {
@@ -69,12 +70,7 @@ pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEnt
             CatalogEntry {
                 id: r.id.clone(),
                 name: r.name.clone(),
-                kind: match r.kind {
-                    ToolKind::Harness => "harness",
-                    ToolKind::Plugin => "plugin",
-                    ToolKind::Prerequisite => "prerequisite",
-                }
-                .to_string(),
+                kind: r.kind.as_str().to_string(),
                 easy_description: r.easy_description.clone(),
                 pricing: r.pricing.clone(),
                 supported_models: r.supported_models.clone(),
@@ -88,6 +84,7 @@ pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEnt
                     .filter(|id| !installed_ids.contains(&id.as_str()))
                     .cloned()
                     .collect(),
+                source: r.source.clone(),
             }
         })
         .collect()

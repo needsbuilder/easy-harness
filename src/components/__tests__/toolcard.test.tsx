@@ -33,6 +33,11 @@ describe("ToolCard", () => {
     expect(screen.getByText("codex 필요")).toBeInTheDocument();
   });
 
+  it("source가 있으면 제작자 표기를 보여준다", () => {
+    render(<ToolCard entry={{ ...entry, source: { label: "만든 곳: NomaDamas" } }} onSelect={() => {}} />);
+    expect(screen.getByText("만든 곳: NomaDamas")).toBeInTheDocument();
+  });
+
   it("클릭하면 onSelect에 id를 넘긴다", () => {
     const onSelect = vi.fn();
     render(<ToolCard entry={entry} onSelect={onSelect} />);
