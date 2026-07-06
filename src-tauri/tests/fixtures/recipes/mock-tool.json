@@ -13,7 +13,7 @@
       "detect": [ { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "echo", "args": ["not-found"] } ],
       "install": [
         { "type": "run_command", "friendly": "지금 모의 도구를 설치하고 있어요", "command": "echo", "args": ["installing tool"] },
-        { "type": "path_check", "friendly": "설치된 자리를 확인하고 있어요", "path": "/tmp" }
+        { "type": "path_check", "friendly": "설치된 자리를 확인하고 있어요", "path": "{{home}}" }
       ],
       "auth": {
         "pattern": "browser_login",
