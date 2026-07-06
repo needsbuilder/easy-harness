@@ -4,12 +4,13 @@ export type FlowKind = "install" | "update" | "uninstall";
 
 export interface Pricing { label: string; kind: "free" | "paid" | "freemium" }
 export interface ModelBadge { modelLabel: string; accountLabel?: string | null }
+export interface SourceInfo { label: string; url?: string | null }
 
 export interface CatalogEntry {
   id: string; name: string; kind: ToolKind; easyDescription: string;
   pricing: Pricing; supportedModels: ModelBadge[]; recommended: boolean;
   requires: string[]; installed: boolean; installedVersion: string | null;
-  missingRequires: string[];
+  missingRequires: string[]; source?: SourceInfo | null;
 }
 
 export interface EnvCheck { id: string; label: string; found: boolean; version: string | null }
