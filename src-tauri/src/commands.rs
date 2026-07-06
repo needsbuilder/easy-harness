@@ -327,9 +327,11 @@ pub fn start_flow(
             let store = StateStore::new(store_path);
             match flow {
                 Flow::Install | Flow::Update => {
+                    let target_version =
+                        probe_version_for(&catalog, &plan.target_id, platform).await;
                     let _ = store.upsert(Installation {
                         recipe_id: plan.target_id.clone(),
-                        version: None,
+                        version: target_version,
                         installed_at: now_unix(),
                         auth_done: true,
                         verified_at: Some(now_unix()),
@@ -337,9 +339,10 @@ pub fn start_flow(
                     // 의존성으로 함께 설치된 도구들도 기록
                     for id in &plan.tool_order {
                         if id != &plan.target_id {
+                            let dep_version = probe_version_for(&catalog, id, platform).await;
                             let _ = store.upsert(Installation {
                                 recipe_id: id.clone(),
-                                version: None,
+                                version: dep_version,
                                 installed_at: now_unix(),
                                 auth_done: false,
                                 verified_at: Some(now_unix()),
@@ -396,6 +399,30 @@ async fn run_demo(
         status: StepStatus::Done { success: true },
     });
     true
+}
+
+/// 레시피의 detect 첫 check_command를 버전 조사 명령으로 쓴다 (없으면 None → 날짜만 표시).
+fn version_probe_command(
+    catalog: &crate::recipe::loader::Catalog,
+    id: &str,
+    platform: Platform,
+) -> Option<(String, Vec<String>)> {
+    let spec = catalog.get(id)?.platforms.get(platform)?;
+    spec.detect.iter().find_map(|s| match s {
+        crate::recipe::schema::Step::CheckCommand { command, args, .. } => {
+            Some((command.clone(), args.clone()))
+        }
+        _ => None,
+    })
+}
+
+async fn probe_version_for(
+    catalog: &crate::recipe::loader::Catalog,
+    id: &str,
+    platform: Platform,
+) -> Option<String> {
+    let (cmd, args) = version_probe_command(catalog, id, platform)?;
+    crate::probe::probe_tool_version(&TokioProcessRunner, &cmd, &args).await
 }
 
 #[cfg(test)]
@@ -481,5 +508,13 @@ mod tests {
         assert!(json.contains("\"stepIndex\":2"));
         assert!(json.contains("\"totalSteps\":8"));
         assert!(json.contains("\"status\":{\"kind\":\"waitingSecret\",\"label\":\"api_key\"}"));
+    }
+
+    #[test]
+    fn version_probe_command_uses_first_detect_check() {
+        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let (cmd, _args) = version_probe_command(&catalog, "claude-code", Platform::Mac)
+            .expect("claude-code mac detect에 check_command 있어야 함");
+        assert!(!cmd.is_empty());
     }
 }
