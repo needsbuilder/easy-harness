@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { PrimaryButton } from "../components/Buttons";
+import { useAppUpdate } from "../lib/appUpdate";
 import { getAppState, listCatalog, onProgress, startFlow } from "../lib/ipc";
 import type { AppState, CatalogEntry } from "../lib/types";
 
@@ -12,9 +13,7 @@ export function Dashboard() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   const [removing, setRemoving] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
-
-  // 앱 자체 업데이트 알림 자리. 마일스톤 5에서 tauri-plugin-updater 연동으로 채워진다
-  const appUpdateReady = false;
+  const { phase: updatePhase, install: installUpdate } = useAppUpdate();
 
   const reload = useCallback(() => {
     getAppState().then(setState).catch(() => setState({ installations: [] }));
@@ -62,10 +61,20 @@ export function Dashboard() {
 
   return (
     <div>
-      {appUpdateReady && (
+      {updatePhase.kind !== "idle" && (
         <div className="mb-6 flex items-center justify-between rounded-card border border-line-gold bg-surface-gold-tint px-5 py-4">
-          <p className="font-bold">이지 하네스 새 버전이 나왔어요. 1분이면 끝나요.</p>
-          <PrimaryButton>지금 업데이트</PrimaryButton>
+          {updatePhase.kind === "available" && (
+            <>
+              <p className="font-bold">이지 하네스 새 버전이 나왔어요. 1분이면 끝나요.</p>
+              <PrimaryButton onClick={installUpdate}>지금 업데이트</PrimaryButton>
+            </>
+          )}
+          {updatePhase.kind === "downloading" && (
+            <p className="font-bold">새 버전을 받는 중이에요 {updatePhase.percent}%</p>
+          )}
+          {updatePhase.kind === "failed" && (
+            <p className="font-bold">업데이트를 받지 못했어요. 다음에 다시 시도할게요.</p>
+          )}
         </div>
       )}
       <h1 className="text-title font-extrabold">내 도구</h1>
@@ -90,7 +99,9 @@ export function Dashboard() {
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">{nameOf(i.recipeId)}</p>
                   {i.version ? (
-                    <p className="font-mono text-caption text-txt-tertiary">v{i.version}</p>
+                    <p className="text-caption text-txt-tertiary">
+                      <span className="font-mono">v{i.version}</span> · {formatInstalledAt(i.installedAt)}
+                    </p>
                   ) : (
                     <p className="text-caption text-txt-tertiary">{formatInstalledAt(i.installedAt)}</p>
                   )}
