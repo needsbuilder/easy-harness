@@ -133,12 +133,41 @@ fn opencode_recipe_spec_and_catalog_is_complete() {
     assert_eq!(win.tool_order, vec!["nodejs-lts", "opencode"]);
     let mac = build_plan(&cat, "opencode", Platform::Mac, Flow::Install, &[]).unwrap();
     assert_eq!(mac.tool_order, vec!["opencode"]);
-    // M3 카탈로그 마감: 하네스 6 + 준비물 2
-    assert_eq!(cat.recipes.len(), 8);
-    let harnesses = cat
-        .recipes
-        .iter()
-        .filter(|r| r.kind == ToolKind::Harness)
-        .count();
-    assert_eq!(harnesses, 6);
+    // 카탈로그 개수·구성 마감 검사는 M4 완결성 테스트(catalog_is_complete_after_m4)가 담당
+}
+
+#[test]
+fn lazycodex_recipe_pulls_codex_and_node_first() {
+    let cat = catalog();
+    let r = cat.get("lazycodex").expect("lazycodex 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["codex"]);
+    assert!(r.source.as_ref().unwrap().label.contains("Sisyphus"));
+    let plan = build_plan(&cat, "lazycodex", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["codex", "nodejs-lts", "lazycodex"]);
+    // Codex가 이미 있으면 준비물과 자신만
+    let plan2 = build_plan(
+        &cat,
+        "lazycodex",
+        Platform::Mac,
+        Flow::Install,
+        &["codex".into()],
+    )
+    .unwrap();
+    assert_eq!(plan2.tool_order, vec!["nodejs-lts", "lazycodex"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(
+            spec.auth.is_none(),
+            "{p:?}: 자체 인증 없음 (Codex 인증에 얹혀감)"
+        );
+        assert!(!spec.verify.is_empty());
+        assert!(!spec.uninstall.is_empty());
+        let joined = format!("{:?}", spec.install);
+        assert!(joined.contains("--no-tui"), "{p:?}: 무인 설치 플래그 필요");
+        assert!(
+            !joined.contains("--codex-autonomous"),
+            "{p:?}: 채택 안 한 플래그"
+        );
+    }
 }
