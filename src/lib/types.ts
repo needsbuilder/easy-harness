@@ -11,6 +11,7 @@ export interface CatalogEntry {
   pricing: Pricing; supportedModels: ModelBadge[]; recommended: boolean;
   requires: string[]; installed: boolean; installedVersion: string | null;
   missingRequires: string[]; source?: SourceInfo | null;
+  platforms: Platform[]; available: boolean;
 }
 
 export interface EnvCheck { id: string; label: string; found: boolean; version: string | null }
