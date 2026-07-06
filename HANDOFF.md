@@ -6,12 +6,11 @@
 - GUI 육안 확인 완료(cua-driver, 실설치 없이): 플러그인 화면 5종 카드(제작자·"Claude Code에 설치돼요") · LazyCodex 프리플라이트("먼저 챙길 게 있어요", 스텝퍼 "Codex·Node.js 설치") · 조사 처리 정상. 시작 버튼은 안 눌러 실설치 없음
 - 카탈로그 13종 확정: 하네스 6 + 플러그인 5(lazycodex·insane-search·korean-law-mcp·im-not-ai·k-skill) + 준비물 2
 
-## 다음 스텝 (형 확인 필요)
-1. **실설치 스모크 2종** — 형 확인 후 진행:
-   - lazycodex: Codex 로그인 필요(브라우저) + 체인 설치 검증. 부수 효과: 형 맥의 기존 lazycodex 4.13.0 잔재가 4.15+로 복구됨
-   - korean-law-mcp: 법제처 OC 키 필요(open.law.go.kr 무료 발급, 이메일) — api_key 패턴 첫 실검증
-2. 스모크 통과 후 M5(서명·배포 파이프라인 + 자동 업데이트) 착수
-3. GitHub 리모트 미등록 (CI 실행하려면 필요) · 레시피 원격 저장소 생성은 M5
+## 다음 스텝 — 실설치 스모크 2종 대기 중 (사용자가 "지금 vs M5 먼저" 미결정 상태로 세션 종료)
+1. **lazycodex 스모크**: `bun run tauri dev`로 앱 기동 → 플러그인 화면 → LazyCodex 클릭 → 프리플라이트 "좋아요, 시작할게요" → 체인(codex→nodejs-lts→lazycodex) 관통. 사용자 몫: 중간에 Codex 브라우저 로그인 클릭(ChatGPT 계정). 참고: 이 맥에 codex CLI는 이미 설치·로그인돼 있으나 앱 store엔 미기록이라 재설치 흐름을 탐(사실상 업그레이드). 부수 효과: 기존 lazycodex 4.13.0 잔재가 4.15+로 복구됨
+2. **korean-law-mcp 스모크**: api_key 패턴 첫 실검증. 사용자 몫: open.law.go.kr에서 법제처 OC 키 무료 발급(이메일, 1분) 후 앱 SecretForm에 붙여넣기
+3. 스모크가 결함을 찾으면 M3 전례대로 fix 브랜치 → main 머지. 통과 후 M5(서명·배포 파이프라인 + 자동 업데이트) 착수
+4. GitHub 리모트 미등록 (CI 실행하려면 필요) · 레시피 원격 저장소 생성은 M5
 
 ## M4에서 확정된 것 (상세는 스펙·계획 문서)
 - 스펙: docs/superpowers/specs/2026-07-06-easy-harness-m4-plugin-recipes-design.md (실측 반영판) · 계획: docs/superpowers/plans/2026-07-06-easy-harness-m4-plugin-recipes.md
