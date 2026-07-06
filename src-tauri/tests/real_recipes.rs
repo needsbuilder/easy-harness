@@ -218,3 +218,24 @@ fn korean_law_recipe_uses_api_key_pattern() {
         assert!(!steps.contains("PtySession"), "{p:?}: 터미널 금지");
     }
 }
+
+#[test]
+fn im_not_ai_recipe_installs_humanize_korean_plugin() {
+    let cat = catalog();
+    let r = cat.get("im-not-ai").expect("im-not-ai 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(spec.auth.is_none(), "{p:?}");
+        let install = format!("{:?}", spec.install);
+        assert!(
+            install.contains("https://github.com/epoko77-ai/im-not-ai.git"),
+            "{p:?}"
+        );
+        assert!(
+            install.contains("humanize-korean@im-not-ai"),
+            "{p:?}: 설치 실체 이름"
+        );
+    }
+}
