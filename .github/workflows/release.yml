@@ -1,0 +1,86 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: 태그와 tauri.conf.json 버전 일치 검사
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CONF=$(jq -r .version src-tauri/tauri.conf.json)
+          if [ "$TAG" != "$CONF" ]; then
+            echo "버전 불일치: 태그 v$TAG vs tauri.conf.json $CONF" >&2
+            exit 1
+          fi
+
+  build:
+    needs: version-check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            target: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            target: x86_64-apple-darwin
+          - platform: windows-latest
+            args: ""
+            target: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: bun install
+      - name: 공증 API 키 파일 복원 (맥 전용)
+        if: startsWith(matrix.platform, 'macos')
+        shell: bash
+        run: |
+          echo "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/apple-api-key.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+      # 윈도우 코드 서명 자리 (M5 보류): WINDOWS_SIGN_* 시크릿 등록 시 여기에 서명 스텝 추가
+      - name: Tauri 빌드·서명·공증·draft 릴리스
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASES_PAT }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_SIGNING_IDENTITY: "Developer ID Application: YONG BEOM GWON (RB6FTGW2DK)"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          owner: needslab-ai
+          repo: easy-harness-releases
+          tagName: v__VERSION__
+          releaseName: "이지 하네스 v__VERSION__"
+          releaseBody: "새 버전이 나왔어요. 아래 파일로 설치할 수 있어요."
+          releaseDraft: true
+          args: ${{ matrix.args }}
+      - name: 시크릿 스캔 (산출물, 발행 게이트 앞 안전망)
+        shell: bash
+        working-directory: src-tauri
+        run: |
+          BUNDLE_DIR="target/release/bundle"
+          if [ -n "${{ matrix.target }}" ]; then
+            BUNDLE_DIR="target/${{ matrix.target }}/release/bundle"
+          fi
+          cargo run --bin scan_secrets -- "$BUNDLE_DIR"
