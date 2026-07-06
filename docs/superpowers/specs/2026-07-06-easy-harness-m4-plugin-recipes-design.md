@@ -46,9 +46,10 @@ M4는 v1 라인업의 나머지 절반인 **오픈소스·플러그인 5종**(la
 
 ### 3.3 k-skill — 한국 특화 스킬 모음
 
-- 정체: SRT 예매·부동산·법령·쇼핑 등 한국 특화 Agent Skills 120+ 모음. 제작 NomaDamas. 출처: github.com/NomaDamas/k-skill (2026-07-06 확인)
+- 정체: SRT 예매·부동산·법령·쇼핑 등 한국 특화 Agent Skills 모음(2026-07-06 실측 102종). 제작 NomaDamas. 출처: github.com/NomaDamas/k-skill (2026-07-06 확인)
 - `requires: ["claude-code"]` — 실제로는 Codex·OpenCode·OpenClaw도 지원하지만 v1은 Claude Code 고정(2절)
-- 설치: `claude plugin marketplace add NomaDamas/k-skill` → `claude plugin install k-skill@k-skill`
+- 설치 (2026-07-06 실측으로 변경): README의 마켓플레이스 경로는 현재 깨져 있음(저장소에 `.claude-plugin/marketplace.json` 없음, `claude plugin marketplace add` 실측 exit 1). 실제 동작 경로는 Vercel Labs skills CLI — `npx --yes skills add NomaDamas/k-skill --all -g -y -a claude-code` (실측: `~/.claude/skills/<이름>/`에 복사, exit 0). mac·windows `prerequisites: ["nodejs-lts"]`
+- 설치 범위 (사용자 확정 2026-07-06): **전체 102종 설치.** 제거는 `npx --yes skills remove <이름들> -g -y`에 레시피 작성 시점의 전체 이름 목록을 명시(실측: 비대화형 exit 0, 없는 이름은 무해하게 건너뜀). 업스트림에 스킬이 추가되면 레시피 원격 갱신으로 목록 동기화
 - 인증: 없음 — 대부분 기능은 운영자 호스팅 프록시로 동작. SRT 로그인·특허 키 등 일부 BYOK 기능은 사용 시점에 도구가 직접 안내(우리 레시피 범위 밖). 카드 설명에 이 사실을 쉬운 말로 한 줄 반영
 - 윈도우: 작성 (Node/프록시 기반이라 네이티브 동작 가능성 높음, 일부 맥 전용 기능은 카드 설명에서 언급하지 않음). M6 검증
 - 주의: 예매·결제류 스킬은 민감 — 카드 설명은 검색·조회 위주로 소개
@@ -59,7 +60,7 @@ M4는 v1 라인업의 나머지 절반인 **오픈소스·플러그인 5종**(la
 - `requires: ["claude-code"]`
 - **api_key 인증 패턴 실사용 1호.** 법제처 OC 키 필수(무료, open.law.go.kr에서 이메일 등록 발급)
   - auth 구성: `open_url`(발급 페이지) → `input_secret`(OC 키) → 키를 도구 설정에 기록하는 스텝. **앱은 키를 보관하지 않는다** — 화면·로그·진단 파일 노출 금지(상위 스펙 6절 원칙)
-- 설치 경로 결정 규칙: 1차 후보는 마켓플레이스 경로(`claude plugin install korean-law@korean-law-marketplace`). **계획 단계 실측에서 OC 키 주입 방법(`LAW_OC` 환경변수 추정)과 verify 실검증이 확인되지 않으면** 폴백 확정: `npm i -g korean-law-mcp` + `claude mcp add`(env로 키 전달) — 이 경로는 `korean-law "민법 제1조"` CLI로 verify 실검증 가능. mac/windows `prerequisites: ["nodejs-lts"]` (npm 경로 채택 시)
+- 설치 경로 (2026-07-06 실측으로 확정): 마켓플레이스 경로 채택, npm 폴백 폐기. 키 주입은 공식 비대화형 옵션 실측 확인 — `claude plugin install korean-law@korean-law-marketplace --config api_key=<OC키>` (플러그인 manifest가 `LAW_OC: ${user_config.api_key}`로 MCP 서버에 전달, 실물 설치본에서 확인)
 - 윈도우: 작성 — 네이티브 지원 명시 확인됨(Node 18+만 필요)
 - 주의: 원격 호스팅 엔드포인트(제3자 프록시) 경로는 채택하지 않는다 — 법령 조회가 외부 프록시를 경유하는 구조는 배제하고 로컬 실행 경로만 사용
 
@@ -122,13 +123,13 @@ M4는 v1 라인업의 나머지 절반인 **오픈소스·플러그인 5종**(la
 - 전체 게이트(M3 동일): cargo 전체 + clippy 0 + fmt + vitest + build, dry_run 전수 카피 검사 자동 적용
 - 마감 스모크: 실설치 GUI 스모크 대표 2종 — lazycodex(체인+선행 안내 검증), korean-law-mcp(api_key 검증). 실설치는 사용자 확인 후 진행. 윈도우는 M6 VM 스모크로 이월
 
-## 9. 계획 단계 라이브 검증 목록 (writing-plans 시점 실측 후 계획에 사실로 박기, 구현 중 재검증 금지)
+## 9. 계획 단계 라이브 검증 목록 — 실측 완료 (2026-07-06, 사용자 맥 / Claude Code 2.1.201)
 
-1. `claude plugin marketplace add`/`install`/`list --json`/`uninstall`의 실제 동작·종료 코드·중복 실행 동작 (로컬 실측)
-2. korean-law-mcp 마켓플레이스 설치본의 OC 키 주입 방법 — 안 풀리면 npm+`claude mcp add` 폴백 확정 (3.4절 결정 규칙)
-3. `npx lazycodex-ai install --no-tui`의 무인 동작 범위와 `--codex-autonomous` 효과, doctor 종료 코드
-4. 각 도구의 설치 명령·마켓플레이스 이름·버전 최신 상태 재확인 (조사일 2026-07-06 기준에서 변동 가능)
-5. auth 섹션 없는 plugin 레시피의 마법사 화면 흐름 (인증 단계 스킵이 자연스러운지)
+1. ✔ `claude plugin` CLI: 성공 exit 0, 실패(없는 플러그인·마켓) exit 1, 중복 marketplace add는 exit 0 멱등("already on disk"), uninstall 비대화형 exit 0, `list --json`은 id·version·scope·enabled·installPath 배열. 단 종료 코드 의미는 여전히 미문서화라 verify는 `list --json` 내용 확인 병행. owner/repo 축약형은 사용자 git 설정에 따라 SSH clone을 탈 수 있어(실측) 레시피는 명시적 HTTPS `.git` URL 사용(HTTPS 형식 exit 0 실측). marketplace add는 시스템 git으로 clone — git 없는 맥 대비 stderr 힌트에 개발자 도구 패턴 포함
+2. ✔ korean-law-mcp 키 주입: `claude plugin install --config api_key=<키>` 공식 옵션 확인(3.4절). npm 폴백 폐기
+3. ✔ lazycodex: doctor는 진단에 FAIL이 있어도 exit 0(실측) — detect/verify 게이트로 사용 불가. 설치 산출물 `~/.local/bin/omo`(+omo-* 헬퍼, 실물 확인)를 path_check/`omo --version`으로 확인. 권장 설치 명령 `npx --yes lazycodex-ai@latest install --no-tui`(doctor 출력의 공식 remediation). `--codex-autonomous`는 Codex 동작을 바꾸는 옵션일 수 있어 채택 안 함
+4. ✔ k-skill: 마켓플레이스 경로 깨짐 → skills CLI로 변경(3.3절). skills CLI 실측: add/remove 비대화형 exit 0, `-a claude-code` 에이전트 지정 유효, 없는 이름 remove 무해
+5. auth 섹션 없는 plugin 레시피의 마법사 화면 흐름(인증 단계 스킵)은 구현 태스크의 vitest·수동 스모크에서 확인
 
 ## 10. 범위 제외 (백로그 유지)
 
