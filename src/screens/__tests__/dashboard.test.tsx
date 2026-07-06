@@ -90,6 +90,20 @@ describe("내 도구", () => {
     expect(screen.getByText(/설치한 도구는 1개예요/)).toBeInTheDocument();
   });
 
+  it("버전이 있으면 버전과 설치 날짜를 함께 보여준다", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "get_app_state") {
+        return { installations: [inst("mock-tool", { version: "4.15.1", installedAt: 1783300000 })] };
+      }
+      if (cmd === "list_catalog") {
+        return [harness({ id: "mock-tool", name: "모의 도구", installed: true })];
+      }
+    });
+    render(<Dashboard />, { wrapper: MemoryRouterWrapper });
+    expect(await screen.findByText(/v4\.15\.1/)).toBeInTheDocument();
+    expect(screen.getByText(/2026년/)).toBeInTheDocument();
+  });
+
   it("버전을 모르면 물음표 대신 설치한 날짜를 보여준다", async () => {
     mockIPC((cmd) => {
       if (cmd === "get_app_state") {
