@@ -4,6 +4,9 @@ import { PrimaryButton } from "../components/Buttons";
 import { getAppState, listCatalog, onProgress, startFlow } from "../lib/ipc";
 import type { AppState, CatalogEntry } from "../lib/types";
 
+const formatInstalledAt = (unixSeconds: number) =>
+  `${new Date(unixSeconds * 1000).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}에 설치했어요`;
+
 export function Dashboard() {
   const [state, setState] = useState<AppState | null>(null);
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
@@ -76,7 +79,7 @@ export function Dashboard() {
       ) : (
         <>
           <p className="mt-1 text-txt-secondary dark:text-txt-secondary-dark">
-            설치한 도구는 {items.length}개예요. 오공이가 매일 새 버전이 있는지 확인해요.
+            설치한 도구는 {items.length}개예요.
           </p>
           <ul className="mt-6 divide-y divide-line dark:divide-line-dark rounded-card border border-line dark:border-line-dark bg-surface-card dark:bg-surface-card-dark shadow-card">
             {items.map((i) => (
@@ -86,9 +89,12 @@ export function Dashboard() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">{nameOf(i.recipeId)}</p>
-                  <p className="font-mono text-caption text-txt-tertiary">v{i.version ?? "?"}</p>
+                  {i.version ? (
+                    <p className="font-mono text-caption text-txt-tertiary">v{i.version}</p>
+                  ) : (
+                    <p className="text-caption text-txt-tertiary">{formatInstalledAt(i.installedAt)}</p>
+                  )}
                 </div>
-                <span className="text-caption font-semibold text-status-success">최신 상태예요</span>
                 <button
                   type="button"
                   className="text-caption text-txt-tertiary hover:text-status-error disabled:opacity-50"

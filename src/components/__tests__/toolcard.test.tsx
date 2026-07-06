@@ -28,6 +28,12 @@ describe("ToolCard", () => {
     expect(screen.getByText(/설치됨/)).toHaveTextContent("설치됨 · v1.2.3");
   });
 
+  it("버전을 모르면 물음표 없이 설치됨만 보여준다", () => {
+    render(<ToolCard entry={{ ...entry, installed: true, installedVersion: null }} onSelect={() => {}} />);
+    expect(screen.getByText(/설치됨/)).toHaveTextContent(/^설치됨$/);
+    expect(screen.queryByText(/v\?/)).not.toBeInTheDocument();
+  });
+
   it("선행 도구가 빠졌으면 경고 배지를 보여준다", () => {
     render(<ToolCard entry={{ ...entry, missingRequires: ["codex"] }} onSelect={() => {}} />);
     expect(screen.getByText("codex 필요")).toBeInTheDocument();
