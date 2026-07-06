@@ -1,7 +1,7 @@
 //! 실물 레시피 전수 스펙 테스트. 각 레시피 태스크가 아래에 자기 검증을 추가한다.
 use easy_harness_lib::recipe::loader::Catalog;
 use easy_harness_lib::recipe::plan::{build_plan, Flow};
-use easy_harness_lib::recipe::schema::{AuthPattern, Platform, ToolKind};
+use easy_harness_lib::recipe::schema::{AuthPattern, Platform, Step, ToolKind};
 
 fn catalog() -> Catalog {
     Catalog::load_dir(&Catalog::bundled_dir()).unwrap()
@@ -263,6 +263,45 @@ fn k_skill_recipe_uses_skills_cli_with_full_set() {
         assert!(un.contains("skills remove"), "{p:?}");
         assert!(un.contains("lotto-results"), "{p:?}: 이름 명시 제거 목록");
         assert!(un.contains("-g -y"), "{p:?}");
+    }
+}
+
+#[test]
+fn bundle_built_from_recipes_dir_parses() {
+    // scripts/build_recipes_bundle.sh와 같은 조립 방식이 유효함을 보증
+    let dir = easy_harness_lib::recipe::loader::Catalog::bundled_dir();
+    let mut recipes: Vec<serde_json::Value> = Vec::new();
+    let mut names: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|e| e == "json"))
+        .collect();
+    names.sort();
+    for p in names {
+        recipes.push(serde_json::from_str(&std::fs::read_to_string(p).unwrap()).unwrap());
+    }
+    let bundle = serde_json::json!({ "bundleVersion": 1, "recipes": recipes }).to_string();
+    let (v, cat) = Catalog::from_bundle(&bundle).expect("조립한 번들이 파싱돼야 함");
+    assert_eq!(v, 1);
+    assert!(cat.get("claude-code").is_some());
+}
+
+#[test]
+fn auth_verify_steps_check_real_login() {
+    let cat = catalog();
+    for (id, needle) in [
+        ("codex", "codex login status"),
+        ("opencode", "opencode auth list"),
+        ("openclaw", "openclaw models status"),
+        ("hermes", "hermes auth status nous"),
+    ] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        let spec = r.platforms.get(Platform::Mac).unwrap();
+        let hit = spec.verify.iter().any(|s| match s {
+            Step::RunCommand { args, .. } => args.iter().any(|a| a.contains(needle)),
+            _ => false,
+        });
+        assert!(hit, "{id}: mac verify에 인증 실검증 스텝 필요");
     }
 }
 

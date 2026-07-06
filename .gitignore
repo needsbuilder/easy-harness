@@ -29,3 +29,6 @@ dist-ssr
 
 # 레시피 서명 개인키 (dev 전용, 절대 커밋 금지)
 recipe-signing-secret.key
+
+# 레시피 번들 생성물 (scripts/build_recipes_bundle.sh 산출물, 커밋 금지)
+src-tauri/recipes-bundle.json*
