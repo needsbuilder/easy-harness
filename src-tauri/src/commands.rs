@@ -527,9 +527,12 @@ mod tests {
         let (cmd, _args) = version_probe_command(&catalog, "gajaecode", Platform::Mac)
             .expect("gajaecode mac detect에 check_command 있어야 함");
         assert!(!cmd.contains("{{"), "치환 안 된 템플릿 남음: {cmd}");
+        // 홈 경로는 OS마다 다르므로(맥 "/Users/..." vs 윈도우 "C:\Users\...") 하드코딩 대신
+        // runner::home_dir()로 기대값을 동적 계산 (runner::tests::home_placeholder_is_expanded_in_command_and_args 관례)
+        let home = crate::runner::home_dir();
         assert!(
-            cmd.starts_with('/'),
-            "홈 경로로 치환된 절대 경로여야 함: {cmd}"
+            cmd.starts_with(&home),
+            "홈 경로({home})로 치환된 경로여야 함: {cmd}"
         );
     }
 }
