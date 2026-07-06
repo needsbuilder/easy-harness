@@ -22,8 +22,11 @@ pub struct EnvReport {
 }
 
 /// stdout에서 버전 토큰(예: 1.2.3, v24.16.0)을 뽑는다. 못 찾으면 None (거짓 버전 금지).
+/// 로그인 셸(예: /bin/zsh -lc)로 실행되면 프로필 배너(예: "Now using node v20.11.0")가
+/// 먼저 찍히고 버전 명령 자체 출력은 stdout 마지막 줄에 오므로, 마지막 비어있지 않은 줄만 본다.
 pub fn extract_version(stdout: &str) -> Option<String> {
-    for token in stdout.split_whitespace() {
+    let last_line = stdout.lines().rev().find(|l| !l.trim().is_empty())?;
+    for token in last_line.split_whitespace() {
         let t = token
             .trim_start_matches('v')
             .trim_end_matches(|c: char| !c.is_ascii_digit());
@@ -140,6 +143,15 @@ mod tests {
         );
         assert_eq!(extract_version("1.2.3-beta").as_deref(), Some("1.2.3"));
         assert_eq!(extract_version("버전 없음"), None);
+    }
+
+    #[test]
+    fn extract_version_ignores_login_shell_banner_uses_last_line() {
+        // 로그인 셸 프로필이 먼저 배너를 찍고, 버전 명령 자체 출력은 마지막 줄에 온다.
+        assert_eq!(
+            extract_version("Now using node v20.11.0\nclaude 2.1.201\n").as_deref(),
+            Some("2.1.201")
+        );
     }
 
     #[tokio::test]

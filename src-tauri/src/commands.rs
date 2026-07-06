@@ -402,6 +402,7 @@ async fn run_demo(
 }
 
 /// 레시피의 detect 첫 check_command를 버전 조사 명령으로 쓴다 (없으면 None → 날짜만 표시).
+/// command/args의 "{{home}}"은 실제 실행 경로(runner)와 동일하게 expand_home으로 치환해 반환한다.
 fn version_probe_command(
     catalog: &crate::recipe::loader::Catalog,
     id: &str,
@@ -409,9 +410,10 @@ fn version_probe_command(
 ) -> Option<(String, Vec<String>)> {
     let spec = catalog.get(id)?.platforms.get(platform)?;
     spec.detect.iter().find_map(|s| match s {
-        crate::recipe::schema::Step::CheckCommand { command, args, .. } => {
-            Some((command.clone(), args.clone()))
-        }
+        crate::recipe::schema::Step::CheckCommand { command, args, .. } => Some((
+            crate::runner::expand_home(command),
+            args.iter().map(|a| crate::runner::expand_home(a)).collect(),
+        )),
         _ => None,
     })
 }
@@ -516,5 +518,18 @@ mod tests {
         let (cmd, _args) = version_probe_command(&catalog, "claude-code", Platform::Mac)
             .expect("claude-code mac detect에 check_command 있어야 함");
         assert!(!cmd.is_empty());
+    }
+
+    #[test]
+    fn version_probe_command_expands_home_template() {
+        // gajaecode mac detect의 command는 "{{home}}/.bun/bin/gjc" 형태 (raw 그대로면 실행 불가).
+        let catalog = Catalog::load_dir(&Catalog::bundled_dir()).unwrap();
+        let (cmd, _args) = version_probe_command(&catalog, "gajaecode", Platform::Mac)
+            .expect("gajaecode mac detect에 check_command 있어야 함");
+        assert!(!cmd.contains("{{"), "치환 안 된 템플릿 남음: {cmd}");
+        assert!(
+            cmd.starts_with('/'),
+            "홈 경로로 치환된 절대 경로여야 함: {cmd}"
+        );
     }
 }
