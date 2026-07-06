@@ -1,4 +1,4 @@
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { ToolCard } from "../ToolCard";
 import type { CatalogEntry } from "../../lib/types";
@@ -9,7 +9,7 @@ const entry: CatalogEntry = {
   pricing: { label: "무료", kind: "free" },
   supportedModels: [{ modelLabel: "Claude 모델", accountLabel: "Anthropic 계정" }],
   recommended: true, requires: [], installed: false, installedVersion: null,
-  missingRequires: [],
+  missingRequires: [], platforms: ["mac", "windows"], available: true,
 };
 
 describe("ToolCard", () => {
@@ -43,5 +43,13 @@ describe("ToolCard", () => {
     render(<ToolCard entry={entry} onSelect={onSelect} />);
     screen.getByRole("button", { name: /모의 도구/ }).click();
     expect(onSelect).toHaveBeenCalledWith("mock-tool");
+  });
+
+  it("available=false면 클릭이 막히고 맥 전용 안내가 보인다", () => {
+    const onSelect = vi.fn();
+    render(<ToolCard entry={{ ...entry, available: false, platforms: ["mac"] }} onSelect={onSelect} />);
+    expect(screen.getByText("지금은 맥에서만 설치돼요")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button"));
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });
