@@ -1,7 +1,7 @@
 //! 실물 레시피 전수 스펙 테스트. 각 레시피 태스크가 아래에 자기 검증을 추가한다.
 use easy_harness_lib::recipe::loader::Catalog;
 use easy_harness_lib::recipe::plan::{build_plan, Flow};
-use easy_harness_lib::recipe::schema::{AuthPattern, Platform, ToolKind};
+use easy_harness_lib::recipe::schema::{AuthPattern, Platform, Step, ToolKind};
 
 fn catalog() -> Catalog {
     Catalog::load_dir(&Catalog::bundled_dir()).unwrap()
@@ -284,6 +284,25 @@ fn bundle_built_from_recipes_dir_parses() {
     let (v, cat) = Catalog::from_bundle(&bundle).expect("조립한 번들이 파싱돼야 함");
     assert_eq!(v, 1);
     assert!(cat.get("claude-code").is_some());
+}
+
+#[test]
+fn auth_verify_steps_check_real_login() {
+    let cat = catalog();
+    for (id, needle) in [
+        ("codex", "codex login status"),
+        ("opencode", "opencode auth list"),
+        ("openclaw", "openclaw models status"),
+        ("hermes", "hermes auth status nous"),
+    ] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        let spec = r.platforms.get(Platform::Mac).unwrap();
+        let hit = spec.verify.iter().any(|s| match s {
+            Step::RunCommand { args, .. } => args.iter().any(|a| a.contains(needle)),
+            _ => false,
+        });
+        assert!(hit, "{id}: mac verify에 인증 실검증 스텝 필요");
+    }
 }
 
 #[test]
