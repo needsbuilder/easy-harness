@@ -1,6 +1,7 @@
 pub mod diagnostics;
 pub mod download;
 pub mod dry_run;
+pub mod error_hints;
 pub mod events;
 pub mod process;
 pub mod pty;
@@ -73,15 +74,18 @@ pub async fn execute_step(
                 Ok(out) if out.exit_code == 0 => StepOutcome::Success {
                     log: vault.mask(&format!("{}{}", out.stdout, out.stderr)),
                 },
-                Ok(out) => StepOutcome::Failure {
-                    message: "이 단계가 잘 끝나지 않았어요. 다시 시도해 볼까요?".into(),
-                    log: vault.mask(&format!(
-                        "exit={}\n{}{}",
-                        out.exit_code, out.stdout, out.stderr
-                    )),
-                },
+                Ok(out) => {
+                    let raw = format!("exit={}\n{}{}", out.exit_code, out.stdout, out.stderr);
+                    StepOutcome::Failure {
+                        message: error_hints::hint_for(&raw).unwrap_or_else(|| {
+                            "이 단계가 잘 끝나지 않았어요. 다시 시도해 볼까요?".into()
+                        }),
+                        log: vault.mask(&raw),
+                    }
+                }
                 Err(e) => StepOutcome::Failure {
-                    message: "명령을 시작하지 못했어요. 다시 시도해 볼까요?".into(),
+                    message: error_hints::hint_for(&e.to_string())
+                        .unwrap_or_else(|| "명령을 시작하지 못했어요. 다시 시도해 볼까요?".into()),
                     log: vault.mask(&e.to_string()),
                 },
             }
@@ -148,15 +152,19 @@ pub async fn execute_step(
                 Ok(out) if out.exit_code == 0 => StepOutcome::Success {
                     log: vault.mask(&format!("{}{}", out.stdout, out.stderr)),
                 },
-                Ok(out) => StepOutcome::Failure {
-                    message: "설치 프로그램이 잘 끝나지 않았어요. 다시 시도해 볼까요?".into(),
-                    log: vault.mask(&format!(
-                        "exit={}\n{}{}",
-                        out.exit_code, out.stdout, out.stderr
-                    )),
-                },
+                Ok(out) => {
+                    let raw = format!("exit={}\n{}{}", out.exit_code, out.stdout, out.stderr);
+                    StepOutcome::Failure {
+                        message: error_hints::hint_for(&raw).unwrap_or_else(|| {
+                            "설치 프로그램이 잘 끝나지 않았어요. 다시 시도해 볼까요?".into()
+                        }),
+                        log: vault.mask(&raw),
+                    }
+                }
                 Err(e) => StepOutcome::Failure {
-                    message: "설치 프로그램을 시작하지 못했어요. 다시 시도해 볼까요?".into(),
+                    message: error_hints::hint_for(&e.to_string()).unwrap_or_else(|| {
+                        "설치 프로그램을 시작하지 못했어요. 다시 시도해 볼까요?".into()
+                    }),
                     log: vault.mask(&e.to_string()),
                 },
             }
@@ -425,6 +433,25 @@ mod tests {
             format!("--config={home}/.tool.json")
         );
         assert!(!home.is_empty());
+    }
+
+    #[tokio::test]
+    async fn failure_message_uses_stderr_hint_when_matched() {
+        let runner = FakeProcessRunner::new(vec![fail("EACCES: permission denied")]);
+        let vault = SecretVault::new();
+        let opener = FakeUrlOpener::default();
+        let downloader = download::FakeDownloader::default();
+        let step = Step::RunCommand {
+            friendly: "설치 중".into(),
+            command: "tool".into(),
+            args: vec![],
+        };
+        let StepOutcome::Failure { message, .. } =
+            execute_step(&step, &runner, &vault, &opener, &downloader).await
+        else {
+            panic!("Failure여야 함");
+        };
+        assert!(message.contains("권한"), "힌트가 반영돼야 함: {message}");
     }
 
     #[tokio::test]

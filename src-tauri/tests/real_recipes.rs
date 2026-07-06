@@ -133,12 +133,154 @@ fn opencode_recipe_spec_and_catalog_is_complete() {
     assert_eq!(win.tool_order, vec!["nodejs-lts", "opencode"]);
     let mac = build_plan(&cat, "opencode", Platform::Mac, Flow::Install, &[]).unwrap();
     assert_eq!(mac.tool_order, vec!["opencode"]);
-    // M3 카탈로그 마감: 하네스 6 + 준비물 2
-    assert_eq!(cat.recipes.len(), 8);
-    let harnesses = cat
-        .recipes
-        .iter()
-        .filter(|r| r.kind == ToolKind::Harness)
-        .count();
-    assert_eq!(harnesses, 6);
+    // 카탈로그 개수·구성 마감 검사는 M4 완결성 테스트(catalog_is_complete_after_m4)가 담당
+}
+
+#[test]
+fn lazycodex_recipe_pulls_codex_and_node_first() {
+    let cat = catalog();
+    let r = cat.get("lazycodex").expect("lazycodex 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["codex"]);
+    assert!(r.source.as_ref().unwrap().label.contains("Sisyphus"));
+    let plan = build_plan(&cat, "lazycodex", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["codex", "nodejs-lts", "lazycodex"]);
+    // Codex가 이미 있으면 준비물과 자신만
+    let plan2 = build_plan(
+        &cat,
+        "lazycodex",
+        Platform::Mac,
+        Flow::Install,
+        &["codex".into()],
+    )
+    .unwrap();
+    assert_eq!(plan2.tool_order, vec!["nodejs-lts", "lazycodex"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(
+            spec.auth.is_none(),
+            "{p:?}: 자체 인증 없음 (Codex 인증에 얹혀감)"
+        );
+        assert!(!spec.verify.is_empty());
+        assert!(!spec.uninstall.is_empty());
+        let joined = format!("{:?}", spec.install);
+        assert!(joined.contains("--no-tui"), "{p:?}: 무인 설치 플래그 필요");
+        assert!(
+            !joined.contains("--codex-autonomous"),
+            "{p:?}: 채택 안 한 플래그"
+        );
+    }
+}
+
+#[test]
+fn insane_search_recipe_is_mac_only_claude_plugin() {
+    let cat = catalog();
+    let r = cat.get("insane-search").expect("insane-search 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    assert!(
+        r.platforms.windows.is_none(),
+        "윈도우는 WSL2 필수라 v1 미지원"
+    );
+    let plan = build_plan(&cat, "insane-search", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["claude-code", "insane-search"]);
+    let mac = r.platforms.get(Platform::Mac).unwrap();
+    assert!(mac.auth.is_none());
+    let install = format!("{:?}", mac.install);
+    assert!(
+        install.contains("https://github.com/fivetaku/gptaku_plugins.git"),
+        "HTTPS URL 고정"
+    );
+    assert!(install.contains("insane-search@gptaku-plugins"));
+}
+
+#[test]
+fn korean_law_recipe_uses_api_key_pattern() {
+    let cat = catalog();
+    let r = cat
+        .get("korean-law-mcp")
+        .expect("korean-law-mcp 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("api_key 인증 필요");
+        assert_eq!(auth.pattern, AuthPattern::ApiKey, "{p:?}");
+        assert_eq!(auth.guide.len(), 3, "{p:?}");
+        let steps = format!("{:?}", auth.steps);
+        assert!(steps.contains("open.law.go.kr"), "{p:?}: 발급 페이지 열기");
+        assert!(steps.contains("InputSecret"), "{p:?}");
+        assert!(steps.contains("law_oc"), "{p:?}: 시크릿 라벨");
+        assert!(
+            steps.contains("--config api_key={{secret:law_oc}}"),
+            "{p:?}: 키 주입"
+        );
+        assert!(!steps.contains("PtySession"), "{p:?}: 터미널 금지");
+    }
+}
+
+#[test]
+fn im_not_ai_recipe_installs_humanize_korean_plugin() {
+    let cat = catalog();
+    let r = cat.get("im-not-ai").expect("im-not-ai 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(spec.auth.is_none(), "{p:?}");
+        let install = format!("{:?}", spec.install);
+        assert!(
+            install.contains("https://github.com/epoko77-ai/im-not-ai.git"),
+            "{p:?}"
+        );
+        assert!(
+            install.contains("humanize-korean@im-not-ai"),
+            "{p:?}: 설치 실체 이름"
+        );
+    }
+}
+
+#[test]
+fn k_skill_recipe_uses_skills_cli_with_full_set() {
+    let cat = catalog();
+    let r = cat.get("k-skill").expect("k-skill 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    let plan = build_plan(&cat, "k-skill", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(
+        plan.tool_order,
+        vec!["claude-code", "nodejs-lts", "k-skill"]
+    );
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(spec.auth.is_none(), "{p:?}");
+        let install = format!("{:?}", spec.install);
+        assert!(
+            install.contains("skills add NomaDamas/k-skill --all -g -y -a claude-code"),
+            "{p:?}"
+        );
+        let un = format!("{:?}", spec.uninstall);
+        assert!(un.contains("skills remove"), "{p:?}");
+        assert!(un.contains("lotto-results"), "{p:?}: 이름 명시 제거 목록");
+        assert!(un.contains("-g -y"), "{p:?}");
+    }
+}
+
+#[test]
+fn catalog_is_complete_after_m4() {
+    let cat = catalog();
+    assert_eq!(cat.recipes.len(), 13, "하네스 6 + 플러그인 5 + 준비물 2");
+    let count = |k: ToolKind| cat.recipes.iter().filter(|r| r.kind == k).count();
+    assert_eq!(count(ToolKind::Harness), 6);
+    assert_eq!(count(ToolKind::Plugin), 5);
+    assert_eq!(count(ToolKind::Prerequisite), 2);
+    // 플러그인 5종 공통 계약: requires 비어 있지 않고, 제3자 오픈소스라 source 표기 필수
+    for r in cat.recipes.iter().filter(|r| r.kind == ToolKind::Plugin) {
+        assert!(
+            !r.requires.is_empty(),
+            "{}: 플러그인은 대상 하네스 필요",
+            r.id
+        );
+        assert!(r.source.is_some(), "{}: 제작자 표기 필요", r.id);
+    }
 }

@@ -24,22 +24,26 @@ pub struct DryRunAuth {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DryRunTool {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub auth: Option<DryRunAuth>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DryRunReport {
     pub target_id: String,
     pub platform: String,
     pub tool_order: Vec<String>,
+    pub tools: Vec<DryRunTool>,
     pub steps: Vec<DryRunStep>,
-    pub auth: Option<DryRunAuth>,
 }
 
-pub fn dry_run(
-    catalog: &Catalog,
-    target_id: &str,
-    platform: Platform,
-) -> Result<DryRunReport, EngineError> {
-    let plan = build_plan(catalog, target_id, platform, Flow::Install, &[])?;
-    let auth = catalog
-        .get(target_id)
+fn auth_of(catalog: &Catalog, id: &str, platform: Platform) -> Option<DryRunAuth> {
+    catalog
+        .get(id)
         .and_then(|r| r.platforms.get(platform))
         .and_then(|spec| spec.auth.as_ref())
         .map(|a| DryRunAuth {
@@ -51,11 +55,34 @@ pub fn dry_run(
             }
             .to_string(),
             guide: a.guide.clone(),
-        });
+        })
+}
+
+pub fn dry_run(
+    catalog: &Catalog,
+    target_id: &str,
+    platform: Platform,
+    installed: &[String],
+) -> Result<DryRunReport, EngineError> {
+    let plan = build_plan(catalog, target_id, platform, Flow::Install, installed)?;
+    let tools = plan
+        .tool_order
+        .iter()
+        .map(|id| {
+            let r = catalog.get(id).expect("plan에 있으면 카탈로그에 있음");
+            DryRunTool {
+                id: r.id.clone(),
+                name: r.name.clone(),
+                kind: r.kind.as_str().to_string(),
+                auth: auth_of(catalog, id, platform),
+            }
+        })
+        .collect();
     Ok(DryRunReport {
         target_id: plan.target_id.clone(),
         platform: platform.as_str().to_string(),
         tool_order: plan.tool_order.clone(),
+        tools,
         steps: plan
             .steps
             .iter()
@@ -67,7 +94,6 @@ pub fn dry_run(
                 friendly: p.step.friendly().to_string(),
             })
             .collect(),
-        auth,
     })
 }
 
@@ -117,7 +143,7 @@ fn assert_catalog_dry_runs_cleanly(catalog: &Catalog) {
                     assert_copy_ok(&recipe.id, g);
                 }
             }
-            let report = dry_run(catalog, &recipe.id, platform)
+            let report = dry_run(catalog, &recipe.id, platform, &[])
                 .unwrap_or_else(|e| panic!("{} @ {:?}: {e}", recipe.id, platform));
             assert!(
                 !report.steps.is_empty(),
@@ -139,18 +165,45 @@ mod tests {
     use crate::recipe::schema::Platform;
 
     #[test]
-    fn report_carries_target_auth_pattern_and_guide() {
+    fn report_carries_per_tool_auth_in_chain() {
         let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
-        let report = dry_run(&catalog, "mock-tool", Platform::Mac).unwrap();
-        let auth = report.auth.expect("mock-tool mac에는 auth가 있음");
+        let report = dry_run(&catalog, "mock-plugin", Platform::Mac, &[]).unwrap();
+        assert_eq!(
+            report.tool_order,
+            vec!["mock-prereq", "mock-tool", "mock-plugin"]
+        );
+        let ids: Vec<&str> = report.tools.iter().map(|t| t.id.as_str()).collect();
+        assert_eq!(ids, vec!["mock-prereq", "mock-tool", "mock-plugin"]);
+        let kinds: Vec<&str> = report.tools.iter().map(|t| t.kind.as_str()).collect();
+        assert_eq!(kinds, vec!["prerequisite", "harness", "plugin"]);
+        // 체인 중간(mock-tool)의 인증이 실려 온다
+        let tool = report.tools.iter().find(|t| t.id == "mock-tool").unwrap();
+        let auth = tool.auth.as_ref().expect("mock-tool 인증 있어야 함");
         assert_eq!(auth.pattern, "browser_login");
         assert_eq!(auth.guide.len(), 3);
+        // 플러그인 자신은 auth 없음
+        assert!(report
+            .tools
+            .iter()
+            .find(|t| t.id == "mock-plugin")
+            .unwrap()
+            .auth
+            .is_none());
+    }
+
+    #[test]
+    fn installed_dependencies_are_excluded_from_report() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let installed = vec!["mock-tool".to_string(), "mock-prereq".to_string()];
+        let report = dry_run(&catalog, "mock-plugin", Platform::Mac, &installed).unwrap();
+        assert_eq!(report.tool_order, vec!["mock-plugin"]);
+        assert_eq!(report.tools.len(), 1);
     }
 
     #[test]
     fn report_lists_steps_in_dependency_order() {
         let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
-        let report = dry_run(&catalog, "mock-plugin", Platform::Mac).unwrap();
+        let report = dry_run(&catalog, "mock-plugin", Platform::Mac, &[]).unwrap();
         assert_eq!(
             report.tool_order,
             vec!["mock-prereq", "mock-tool", "mock-plugin"]

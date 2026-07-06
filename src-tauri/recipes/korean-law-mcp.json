@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "id": "korean-law-mcp",
+  "name": "한국 법령 검색",
+  "kind": "plugin",
+  "easyDescription": "법제처 공식 자료로 법령과 판례를 정확하게 찾아 주는 법률 도우미예요",
+  "pricing": { "label": "무료 (인증키 필요)", "kind": "free" },
+  "recommended": false,
+  "requires": ["claude-code"],
+  "source": { "label": "만든 곳: chrisryugj", "url": "https://github.com/chrisryugj/korean-law-mcp" },
+  "platforms": {
+    "mac": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "claude plugin list --json | grep -q 'korean-law@korean-law-marketplace'"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "플러그인 가게를 등록하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin marketplace add https://github.com/chrisryugj/korean-law-mcp.git"] }
+      ],
+      "auth": {
+        "pattern": "api_key",
+        "steps": [
+          { "type": "open_url", "friendly": "법제처 인증키 발급 페이지를 열어 드릴게요", "url": "https://open.law.go.kr/LSO/openApi/guideList.do" },
+          { "type": "input_secret", "friendly": "발급받은 인증키를 넣어 주세요", "label": "law_oc" },
+          { "type": "run_command", "friendly": "인증키와 함께 법령 검색기를 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin install korean-law@korean-law-marketplace --config api_key={{secret:law_oc}}"] }
+        ],
+        "guide": [
+          "버튼을 누르면 법제처 발급 페이지가 열려요. 이메일만 있으면 무료로 바로 받아요",
+          "발급받은 인증키(짧은 영문 아이디 모양)를 복사해서 아래 칸에 붙여넣어 주세요",
+          "등록이 끝나면 Claude Code 안에서 법령 검색을 바로 쓸 수 있어요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin list --json | grep -q 'korean-law@korean-law-marketplace'"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "법령 검색기를 새 버전으로 바꾸고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin update korean-law"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "법령 검색기를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin uninstall korean-law"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin uninstall korean-law || true"] }
+      ]
+    },
+    "windows": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "cmd", "args": ["/C", "claude plugin list --json | findstr korean-law@korean-law-marketplace"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "플러그인 가게를 등록하고 있어요", "command": "cmd", "args": ["/C", "claude plugin marketplace add https://github.com/chrisryugj/korean-law-mcp.git"] }
+      ],
+      "auth": {
+        "pattern": "api_key",
+        "steps": [
+          { "type": "open_url", "friendly": "법제처 인증키 발급 페이지를 열어 드릴게요", "url": "https://open.law.go.kr/LSO/openApi/guideList.do" },
+          { "type": "input_secret", "friendly": "발급받은 인증키를 넣어 주세요", "label": "law_oc" },
+          { "type": "run_command", "friendly": "인증키와 함께 법령 검색기를 연결하고 있어요", "command": "cmd", "args": ["/C", "claude plugin install korean-law@korean-law-marketplace --config api_key={{secret:law_oc}}"] }
+        ],
+        "guide": [
+          "버튼을 누르면 법제처 발급 페이지가 열려요. 이메일만 있으면 무료로 바로 받아요",
+          "발급받은 인증키(짧은 영문 아이디 모양)를 복사해서 아래 칸에 붙여넣어 주세요",
+          "등록이 끝나면 Claude Code 안에서 법령 검색을 바로 쓸 수 있어요"
+        ]
+      },
+      "verify": [
+        { "type": "check_command", "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요", "command": "cmd", "args": ["/C", "claude plugin list --json | findstr korean-law@korean-law-marketplace"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "법령 검색기를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "claude plugin update korean-law"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "법령 검색기를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "claude plugin uninstall korean-law"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "claude plugin uninstall korean-law"] }
+      ]
+    }
+  }
+}

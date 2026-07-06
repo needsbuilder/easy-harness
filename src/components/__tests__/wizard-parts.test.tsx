@@ -12,6 +12,11 @@ describe("마법사 부품", () => {
     expect(screen.getByText("준비물 설치").className).toContain("font-bold");
   });
 
+  it("helperNames가 있으면 2단계 라벨에 도구 이름이 나온다", () => {
+    render(<WizardStepper current={2} toolName="lazycodex" helperNames={["Codex", "Node.js"]} />);
+    expect(screen.getByText("Codex·Node.js 설치")).toBeInTheDocument();
+  });
+
   it("에러 패널은 다시 시도 버튼을 부른다", () => {
     const onRetry = vi.fn();
     render(

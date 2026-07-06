@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "insane-search",
+  "name": "인세인서치",
+  "kind": "plugin",
+  "easyDescription": "웹페이지가 안 열릴 때 다른 길을 찾아 끝까지 읽어다 주는 검색 보조예요",
+  "pricing": { "label": "무료", "kind": "free" },
+  "recommended": false,
+  "requires": ["claude-code"],
+  "source": { "label": "만든 곳: fivetaku", "url": "https://github.com/fivetaku/insane-search" },
+  "platforms": {
+    "mac": {
+      "prerequisites": [],
+      "detect": [
+        { "type": "check_command", "friendly": "이미 설치돼 있는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "claude plugin list --json | grep -q 'insane-search@gptaku-plugins'"] }
+      ],
+      "install": [
+        { "type": "run_command", "friendly": "플러그인 가게를 등록하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git"] },
+        { "type": "run_command", "friendly": "인세인서치를 Claude Code에 설치하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin install insane-search@gptaku-plugins"] }
+      ],
+      "verify": [
+        { "type": "check_command", "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin list --json | grep -q 'insane-search@gptaku-plugins'"] }
+      ],
+      "update": [
+        { "type": "run_command", "friendly": "인세인서치를 새 버전으로 바꾸고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin update insane-search"] }
+      ],
+      "uninstall": [
+        { "type": "run_command", "friendly": "인세인서치를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin uninstall insane-search"] }
+      ],
+      "rollback": [
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude plugin uninstall insane-search || true"] }
+      ]
+    }
+  }
+}

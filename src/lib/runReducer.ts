@@ -2,6 +2,7 @@ import type { ProgressEvent } from "./types";
 
 export interface RunState {
   targetId: string;
+  currentRecipeId: string;
   totalSteps: number;
   stepIndex: number;
   friendly: string;
@@ -18,7 +19,7 @@ export interface RunState {
 
 export function initialRunState(targetId: string): RunState {
   return {
-    targetId, totalSteps: 0, stepIndex: 0, friendly: "준비하고 있어요",
+    targetId, currentRecipeId: targetId, totalSteps: 0, stepIndex: 0, friendly: "준비하고 있어요",
     percent: 0, phase: 1, section: "detect", logs: [], error: null, waitingSecret: null,
     terminalSession: null, done: false, success: false,
   };
@@ -36,6 +37,7 @@ export function runReducer(state: RunState, ev: ProgressEvent): RunState {
   const phase = Math.max(state.phase, phaseOf(ev, state.targetId)) as RunState["phase"];
   const base = {
     ...state,
+    currentRecipeId: ev.recipeId || state.currentRecipeId,
     totalSteps: ev.totalSteps,
     stepIndex: ev.stepIndex,
     friendly: ev.friendly,

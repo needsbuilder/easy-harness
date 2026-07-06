@@ -12,7 +12,7 @@ use crate::error::EngineError;
 use crate::probe::{probe_env, EnvReport};
 use crate::recipe::loader::Catalog;
 use crate::recipe::plan::{build_plan, Flow};
-use crate::recipe::schema::{Platform, ToolKind};
+use crate::recipe::schema::Platform;
 use crate::runner::dry_run::{dry_run, DryRunReport};
 use crate::runner::events::{ProgressEmitter, ProgressEvent, StepStatus};
 use crate::runner::process::TokioProcessRunner;
@@ -53,9 +53,16 @@ pub struct CatalogEntry {
     pub installed: bool,
     pub installed_version: Option<String>,
     pub missing_requires: Vec<String>,
+    pub source: Option<crate::recipe::schema::SourceInfo>,
+    pub platforms: Vec<String>,
+    pub available: bool,
 }
 
-pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEntry> {
+pub fn to_catalog_entries(
+    catalog: &Catalog,
+    state: &AppState,
+    platform: Option<Platform>,
+) -> Vec<CatalogEntry> {
     let installed_ids: Vec<&str> = state
         .installations
         .iter()
@@ -69,12 +76,7 @@ pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEnt
             CatalogEntry {
                 id: r.id.clone(),
                 name: r.name.clone(),
-                kind: match r.kind {
-                    ToolKind::Harness => "harness",
-                    ToolKind::Plugin => "plugin",
-                    ToolKind::Prerequisite => "prerequisite",
-                }
-                .to_string(),
+                kind: r.kind.as_str().to_string(),
                 easy_description: r.easy_description.clone(),
                 pricing: r.pricing.clone(),
                 supported_models: r.supported_models.clone(),
@@ -88,6 +90,18 @@ pub fn to_catalog_entries(catalog: &Catalog, state: &AppState) -> Vec<CatalogEnt
                     .filter(|id| !installed_ids.contains(&id.as_str()))
                     .cloned()
                     .collect(),
+                source: r.source.clone(),
+                platforms: {
+                    let mut v = Vec::new();
+                    if r.platforms.mac.is_some() {
+                        v.push("mac".to_string());
+                    }
+                    if r.platforms.windows.is_some() {
+                        v.push("windows".to_string());
+                    }
+                    v
+                },
+                available: platform.is_some_and(|p| r.platforms.get(p).is_some()),
             }
         })
         .collect()
@@ -159,13 +173,20 @@ pub async fn get_env_report() -> EnvReport {
 
 #[tauri::command]
 pub fn list_catalog(ctx: State<'_, AppContext>) -> Vec<CatalogEntry> {
-    to_catalog_entries(&ctx.catalog, &ctx.store.load())
+    to_catalog_entries(&ctx.catalog, &ctx.store.load(), Platform::current())
 }
 
 #[tauri::command]
 pub fn get_dry_run(tool_id: String, ctx: State<'_, AppContext>) -> Result<DryRunReport, String> {
     let platform = current_platform()?;
-    dry_run(&ctx.catalog, &tool_id, platform).map_err(err_str)
+    let installed: Vec<String> = ctx
+        .store
+        .load()
+        .installations
+        .iter()
+        .map(|i| i.recipe_id.clone())
+        .collect();
+    dry_run(&ctx.catalog, &tool_id, platform, &installed).map_err(err_str)
 }
 
 #[tauri::command]
@@ -395,13 +416,49 @@ mod tests {
                 verified_at: Some(2),
             }],
         };
-        let entries = to_catalog_entries(&catalog, &state);
+        let entries = to_catalog_entries(&catalog, &state, Some(Platform::Mac));
         let prereq = entries.iter().find(|e| e.id == "mock-prereq").unwrap();
         assert!(prereq.installed);
         assert_eq!(prereq.installed_version.as_deref(), Some("0.1.0"));
         let plugin = entries.iter().find(|e| e.id == "mock-plugin").unwrap();
         assert!(!plugin.installed);
         assert_eq!(plugin.missing_requires, vec!["mock-tool"]); // mock-tool 미설치라 경고 배지감
+    }
+
+    #[test]
+    fn entries_expose_platform_availability() {
+        let mut catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        // mock-tool을 맥 전용으로 조작
+        catalog
+            .recipes
+            .iter_mut()
+            .find(|r| r.id == "mock-tool")
+            .unwrap()
+            .platforms
+            .windows = None;
+        let state = AppState {
+            installations: vec![],
+        };
+        let on_win = to_catalog_entries(
+            &catalog,
+            &state,
+            Some(crate::recipe::schema::Platform::Windows),
+        );
+        let tool = on_win.iter().find(|e| e.id == "mock-tool").unwrap();
+        assert_eq!(tool.platforms, vec!["mac"]);
+        assert!(!tool.available);
+        let on_mac =
+            to_catalog_entries(&catalog, &state, Some(crate::recipe::schema::Platform::Mac));
+        assert!(
+            on_mac
+                .iter()
+                .find(|e| e.id == "mock-tool")
+                .unwrap()
+                .available
+        );
+        // OS 판별 불가(None)면 전부 비가용
+        let unknown = to_catalog_entries(&catalog, &state, None);
+        assert!(unknown.iter().all(|e| !e.available));
     }
 
     #[test]
