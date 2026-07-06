@@ -21,6 +21,36 @@ pub struct EnvReport {
     pub missing_count: usize,
 }
 
+/// stdout에서 버전 토큰(예: 1.2.3, v24.16.0)을 뽑는다. 못 찾으면 None (거짓 버전 금지).
+pub fn extract_version(stdout: &str) -> Option<String> {
+    for token in stdout.split_whitespace() {
+        let t = token
+            .trim_start_matches('v')
+            .trim_end_matches(|c: char| !c.is_ascii_digit());
+        let parts: Vec<&str> = t.split('.').collect();
+        if parts.len() >= 2
+            && parts
+                .iter()
+                .all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+        {
+            return Some(t.to_string());
+        }
+    }
+    None
+}
+
+/// 도구 하나의 버전을 검출 명령으로 조사한다. 어떤 실패든 None (설치 성공 판정과 무관).
+pub async fn probe_tool_version(
+    runner: &impl ProcessRunner,
+    command: &str,
+    args: &[String],
+) -> Option<String> {
+    match runner.run(command, args).await {
+        Ok(out) if out.exit_code == 0 => extract_version(&out.stdout),
+        _ => None,
+    }
+}
+
 pub async fn probe_env(runner: &impl ProcessRunner) -> EnvReport {
     let (os, os_label) = match std::env::consts::OS {
         "macos" => ("mac", "맥"),
@@ -95,5 +125,34 @@ mod tests {
             .checks
             .iter()
             .all(|c| !c.found && c.version.is_none()));
+    }
+
+    #[test]
+    fn extract_version_finds_semverish_token() {
+        assert_eq!(extract_version("v24.16.0\n").as_deref(), Some("24.16.0"));
+        assert_eq!(
+            extract_version("git version 2.49.0").as_deref(),
+            Some("2.49.0")
+        );
+        assert_eq!(
+            extract_version("omo 4.15.1 (stable)").as_deref(),
+            Some("4.15.1")
+        );
+        assert_eq!(extract_version("1.2.3-beta").as_deref(), Some("1.2.3"));
+        assert_eq!(extract_version("버전 없음"), None);
+    }
+
+    #[tokio::test]
+    async fn probe_tool_version_uses_runner_output() {
+        let runner = FakeProcessRunner::new(vec![ok("claude 2.1.201\n")]);
+        let v = probe_tool_version(&runner, "claude", &["--version".to_string()]).await;
+        assert_eq!(v.as_deref(), Some("2.1.201"));
+    }
+
+    #[tokio::test]
+    async fn probe_tool_version_none_on_failure() {
+        let runner = FakeProcessRunner::new(vec![]); // 응답 없음 = 명령 실패
+        let v = probe_tool_version(&runner, "ghost", &[]).await;
+        assert_eq!(v, None);
     }
 }
