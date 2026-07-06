@@ -33,7 +33,7 @@
       },
       "verify": [
         { "type": "check_command", "friendly": "OpenCode가 잘 응답하는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "opencode --version"] },
-        { "type": "run_command", "friendly": "로그인 정보가 잘 저장됐는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "opencode auth list 2>&1 | grep -Eq 'oauth|api'"] }
+        { "type": "run_command", "friendly": "로그인 정보가 잘 저장됐는지 볼게요", "command": "/bin/zsh", "args": ["-lc", "opencode auth list 2>&1 | grep '●' | grep -Eq 'oauth|api'"] }
       ],
       "update": [
         { "type": "run_command", "friendly": "OpenCode를 새 버전으로 바꾸고 있어요", "command": "/bin/zsh", "args": ["-lc", "opencode upgrade"] }
