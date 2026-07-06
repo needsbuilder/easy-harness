@@ -93,8 +93,12 @@ pub fn to_catalog_entries(
                 source: r.source.clone(),
                 platforms: {
                     let mut v = Vec::new();
-                    if r.platforms.mac.is_some() { v.push("mac".to_string()); }
-                    if r.platforms.windows.is_some() { v.push("windows".to_string()); }
+                    if r.platforms.mac.is_some() {
+                        v.push("mac".to_string());
+                    }
+                    if r.platforms.windows.is_some() {
+                        v.push("windows".to_string());
+                    }
                     v
                 },
                 available: platform.is_some_and(|p| r.platforms.get(p).is_some()),
@@ -425,13 +429,26 @@ mod tests {
             .unwrap()
             .platforms
             .windows = None;
-        let state = AppState { installations: vec![] };
-        let on_win = to_catalog_entries(&catalog, &state, Some(crate::recipe::schema::Platform::Windows));
+        let state = AppState {
+            installations: vec![],
+        };
+        let on_win = to_catalog_entries(
+            &catalog,
+            &state,
+            Some(crate::recipe::schema::Platform::Windows),
+        );
         let tool = on_win.iter().find(|e| e.id == "mock-tool").unwrap();
         assert_eq!(tool.platforms, vec!["mac"]);
         assert!(!tool.available);
-        let on_mac = to_catalog_entries(&catalog, &state, Some(crate::recipe::schema::Platform::Mac));
-        assert!(on_mac.iter().find(|e| e.id == "mock-tool").unwrap().available);
+        let on_mac =
+            to_catalog_entries(&catalog, &state, Some(crate::recipe::schema::Platform::Mac));
+        assert!(
+            on_mac
+                .iter()
+                .find(|e| e.id == "mock-tool")
+                .unwrap()
+                .available
+        );
         // OS 판별 불가(None)면 전부 비가용
         let unknown = to_catalog_entries(&catalog, &state, None);
         assert!(unknown.iter().all(|e| !e.available));
