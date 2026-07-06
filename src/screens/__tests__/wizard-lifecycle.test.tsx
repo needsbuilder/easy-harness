@@ -12,10 +12,10 @@ const dryRun: DryRunReport = {
   targetId: "mock-tool",
   platform: "mac",
   toolOrder: ["mock-tool"],
+  tools: [{ id: "mock-tool", name: "모의 도구", kind: "harness", auth: null }],
   steps: [
     { recipeId: "mock-tool", recipeName: "모의 도구", section: "install", stepType: "run", friendly: "설치 중" },
   ],
-  auth: null,
 };
 
 describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
@@ -87,7 +87,9 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
     let fireProgress: ((ev: ProgressEvent) => void) | undefined;
     vi.mocked(ipc.getDryRun).mockResolvedValue({
       ...dryRun,
-      auth: { pattern: "api_key", guide: ["발급 페이지에서 열쇠를 복사하세요"] },
+      tools: [
+        { id: "mock-tool", name: "모의 도구", kind: "harness", auth: { pattern: "api_key", guide: ["발급 페이지에서 열쇠를 복사하세요"] } },
+      ],
     });
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
     vi.mocked(ipc.onProgress).mockImplementation(async (_runId, cb) => {

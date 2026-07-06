@@ -179,7 +179,14 @@ pub fn list_catalog(ctx: State<'_, AppContext>) -> Vec<CatalogEntry> {
 #[tauri::command]
 pub fn get_dry_run(tool_id: String, ctx: State<'_, AppContext>) -> Result<DryRunReport, String> {
     let platform = current_platform()?;
-    dry_run(&ctx.catalog, &tool_id, platform).map_err(err_str)
+    let installed: Vec<String> = ctx
+        .store
+        .load()
+        .installations
+        .iter()
+        .map(|i| i.recipe_id.clone())
+        .collect();
+    dry_run(&ctx.catalog, &tool_id, platform, &installed).map_err(err_str)
 }
 
 #[tauri::command]
