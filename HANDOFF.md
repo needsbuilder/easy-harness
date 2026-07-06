@@ -4,12 +4,13 @@
 - 스펙: docs/superpowers/specs/2026-07-06-easy-harness-m5-deploy-design.md · 계획: docs/superpowers/plans/2026-07-06-easy-harness-m5-deploy.md (13태스크)
 - 브랜치: feat/m5-deploy · 레저: .superpowers/sdd/progress.md (태스크별 커밋·리뷰 판정 기록)
 - **완료(리뷰 승인까지)**: T1 인프라(needslab-ai 조직+레포 3종+push) · T2 레시피 번들 채널(v1 게시·앱 수신 실검증) · T4 scan_secrets(fail-closed) · T5 updater 백엔드(pubkey 검증) · T6 업데이트 훅+배너 · T7 실버전 채움({{home}} 치환·배너 오탐 픽스) · T8 버전·날짜 병기 · T9 verify 인증 실검증 4종(hermes=nous 소스 확정, opencode 패턴 조임)
-- **진행 중**: T10 release.yml 리뷰 대기 · T3 시크릿 9종 중 6종 등록 완료
-- **사용자 대기**: App Store Connect 로그인 → APPLE_API_ISSUER/KEY/KEY_P8 3종 등록 (Dashlane apple.com 항목 2개 모두 비번 거부됨 — 실제 값으로 갱신 권장). 이게 없으면 T12(첫 릴리스, 공증)만 막힘
+- **T10~T11 완료**: release.yml 리뷰 Approved → 최종 브랜치 리뷰(opus) MERGE OK → main 머지 e18d4cb → 첫 CI에서 발견된 M2 시절 결함(픽스처 path_check /tmp, 윈도우엔 없음) 픽스 953b03a → **CI 3잡 전부 GREEN**
+- **T3**: 시크릿 9종 중 6종 등록 완료
+- **사용자 대기 (유일한 블로커)**: App Store Connect 로그인 → APPLE_API_ISSUER/KEY/KEY_P8 3종 등록 (Dashlane apple.com 항목 2개 모두 비번 거부됨 — 실제 값으로 갱신 권장). 이게 없으면 T12(첫 릴리스, 공증)만 막힘
 
 ## 다음 스텝
-1. T10 리뷰 → T11 게이트 5종+최종 브랜치 리뷰+main 머지
-2. T12 v0.1.0 태그 릴리스 스모크 (완료 기준 1·3: dmg spctl, 시크릿 스캔 주입 실증) — **Apple API 키 3종 필수**
+1. 사용자 로그인 → API 키 발급·등록 (크롬 App Store Connect 탭 열려 있음)
+2. T12 v0.1.0 태그 릴리스 스모크 (완료 기준 1·3: dmg spctl, 시크릿 스캔 주입 실증). 주의: 스캔 실패 draft는 발행 금지+gh release delete
 3. T13 v0.1.1 자동 업데이트 스모크 (완료 기준 2) + CLAUDE.md 릴리스 절차 + 마감
 
 ## 핵심 결정/주의 (이번 세션 실측)
