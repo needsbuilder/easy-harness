@@ -267,6 +267,26 @@ fn k_skill_recipe_uses_skills_cli_with_full_set() {
 }
 
 #[test]
+fn bundle_built_from_recipes_dir_parses() {
+    // scripts/build_recipes_bundle.sh와 같은 조립 방식이 유효함을 보증
+    let dir = easy_harness_lib::recipe::loader::Catalog::bundled_dir();
+    let mut recipes: Vec<serde_json::Value> = Vec::new();
+    let mut names: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|e| e == "json"))
+        .collect();
+    names.sort();
+    for p in names {
+        recipes.push(serde_json::from_str(&std::fs::read_to_string(p).unwrap()).unwrap());
+    }
+    let bundle = serde_json::json!({ "bundleVersion": 1, "recipes": recipes }).to_string();
+    let (v, cat) = Catalog::from_bundle(&bundle).expect("조립한 번들이 파싱돼야 함");
+    assert_eq!(v, 1);
+    assert!(cat.get("claude-code").is_some());
+}
+
+#[test]
 fn catalog_is_complete_after_m4() {
     let cat = catalog();
     assert_eq!(cat.recipes.len(), 13, "하네스 6 + 플러그인 5 + 준비물 2");
