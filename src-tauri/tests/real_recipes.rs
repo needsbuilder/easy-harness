@@ -193,3 +193,28 @@ fn insane_search_recipe_is_mac_only_claude_plugin() {
     );
     assert!(install.contains("insane-search@gptaku-plugins"));
 }
+
+#[test]
+fn korean_law_recipe_uses_api_key_pattern() {
+    let cat = catalog();
+    let r = cat
+        .get("korean-law-mcp")
+        .expect("korean-law-mcp 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        let auth = spec.auth.as_ref().expect("api_key 인증 필요");
+        assert_eq!(auth.pattern, AuthPattern::ApiKey, "{p:?}");
+        assert_eq!(auth.guide.len(), 3, "{p:?}");
+        let steps = format!("{:?}", auth.steps);
+        assert!(steps.contains("open.law.go.kr"), "{p:?}: 발급 페이지 열기");
+        assert!(steps.contains("InputSecret"), "{p:?}");
+        assert!(steps.contains("law_oc"), "{p:?}: 시크릿 라벨");
+        assert!(
+            steps.contains("--config api_key={{secret:law_oc}}"),
+            "{p:?}: 키 주입"
+        );
+        assert!(!steps.contains("PtySession"), "{p:?}: 터미널 금지");
+    }
+}
