@@ -171,3 +171,25 @@ fn lazycodex_recipe_pulls_codex_and_node_first() {
         );
     }
 }
+
+#[test]
+fn insane_search_recipe_is_mac_only_claude_plugin() {
+    let cat = catalog();
+    let r = cat.get("insane-search").expect("insane-search 레시피 없음");
+    assert_eq!(r.kind, ToolKind::Plugin);
+    assert_eq!(r.requires, vec!["claude-code"]);
+    assert!(
+        r.platforms.windows.is_none(),
+        "윈도우는 WSL2 필수라 v1 미지원"
+    );
+    let plan = build_plan(&cat, "insane-search", Platform::Mac, Flow::Install, &[]).unwrap();
+    assert_eq!(plan.tool_order, vec!["claude-code", "insane-search"]);
+    let mac = r.platforms.get(Platform::Mac).unwrap();
+    assert!(mac.auth.is_none());
+    let install = format!("{:?}", mac.install);
+    assert!(
+        install.contains("https://github.com/fivetaku/gptaku_plugins.git"),
+        "HTTPS URL 고정"
+    );
+    assert!(install.contains("insane-search@gptaku-plugins"));
+}
