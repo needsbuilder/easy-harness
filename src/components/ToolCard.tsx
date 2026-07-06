@@ -44,6 +44,11 @@ export function ToolCard({ entry, onSelect, resolveName }: {
           </Badge>
         )}
       </div>
+      {entry.kind === "plugin" && entry.requires.length > 0 && (
+        <p className="mt-2 text-caption text-txt-tertiary">
+          {entry.requires.map((id) => resolveName?.(id) ?? id).join("·")}에 설치돼요
+        </p>
+      )}
       {entry.source && (
         <p className="mt-3 text-caption text-txt-tertiary">{entry.source.label}</p>
       )}
