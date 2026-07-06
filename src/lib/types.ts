@@ -26,9 +26,12 @@ export interface DryRunAuth {
   pattern: "browser_login" | "api_key" | "interactive_terminal" | "automatic";
   guide: string[];
 }
+export interface DryRunTool {
+  id: string; name: string; kind: ToolKind; auth: DryRunAuth | null;
+}
 export interface DryRunReport {
-  targetId: string; platform: string; toolOrder: string[]; steps: DryRunStep[];
-  auth: DryRunAuth | null;
+  targetId: string; platform: string; toolOrder: string[];
+  tools: DryRunTool[]; steps: DryRunStep[];
 }
 
 export type StepStatus =

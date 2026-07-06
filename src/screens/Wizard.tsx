@@ -42,7 +42,8 @@ export function Wizard() {
           const preview = await getDryRun(toolId);
           const target = preview.steps.find((s) => s.recipeId === toolId);
           const newRunId = await startFlow(toolId, "install", false);
-          return { runId: newRunId, auth: preview.auth, toolName: target?.recipeName ?? toolId };
+          const toolAuth = preview.tools.find((t) => t.id === toolId)?.auth ?? null;
+          return { runId: newRunId, auth: toolAuth, toolName: target?.recipeName ?? toolId };
         })(),
       };
     }
