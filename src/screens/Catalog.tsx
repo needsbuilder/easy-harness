@@ -1,8 +1,8 @@
-import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ToolCard } from "../components/ToolCard";
 import { listCatalog } from "../lib/ipc";
+import { useTauriEvent } from "../lib/useTauriEvent";
 import type { CatalogEntry } from "../lib/types";
 
 export function Catalog() {
@@ -16,14 +16,7 @@ export function Catalog() {
   }, []);
 
   useEffect(load, [load]);
-
-  useEffect(() => {
-    let un: (() => void) | undefined;
-    void listen("catalog://updated", load).then((u) => {
-      un = u;
-    });
-    return () => un?.();
-  }, [load]);
+  useTauriEvent("catalog://updated", load);
 
   const harnesses = entries.filter((e) => e.kind === "harness");
 

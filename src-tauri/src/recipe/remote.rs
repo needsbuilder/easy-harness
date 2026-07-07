@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::Duration;
 
 use crate::error::EngineError;
 use crate::recipe::loader::Catalog;
@@ -48,18 +49,33 @@ fn store_bundle_with_key(
     Ok(true)
 }
 
+// 백그라운드 1회성 호출이라 실패는 조용히 무시되지만, 타임아웃이 없으면
+// 네트워크가 응답 없이 물고만 있을 때 무한 대기로 이어질 수 있어 막아둔다.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// 원격에서 번들·서명을 받아 검증 후 캐시에 저장. 새로 저장했으면 true.
 pub async fn refresh(url_base: &str, cache_dir: &Path) -> Result<bool, EngineError> {
-    let get = |path: String| async move {
-        let resp = reqwest::get(&path)
-            .await
-            .map_err(|e| std::io::Error::other(e.to_string()))?;
-        if !resp.status().is_success() {
-            return Err(std::io::Error::other(format!("HTTP {}", resp.status())));
+    let client = reqwest::Client::builder()
+        .connect_timeout(CONNECT_TIMEOUT)
+        .timeout(REQUEST_TIMEOUT)
+        .build()
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
+    let get = |path: String| {
+        let client = client.clone();
+        async move {
+            let resp = client
+                .get(&path)
+                .send()
+                .await
+                .map_err(|e| std::io::Error::other(e.to_string()))?;
+            if !resp.status().is_success() {
+                return Err(std::io::Error::other(format!("HTTP {}", resp.status())));
+            }
+            resp.bytes()
+                .await
+                .map_err(|e| std::io::Error::other(e.to_string()))
         }
-        resp.bytes()
-            .await
-            .map_err(|e| std::io::Error::other(e.to_string()))
     };
     let bundle = get(format!("{url_base}/recipes-bundle.json")).await?;
     let sig = String::from_utf8_lossy(&get(format!("{url_base}/recipes-bundle.json.sig")).await?)
@@ -125,5 +141,20 @@ mod tests {
         assert!(stored);
         let cached = std::fs::read_to_string(dir.path().join("recipes-bundle.json")).unwrap();
         assert_eq!(cached, v6); // 캐시가 v6로 교체됨
+    }
+
+    // 블랙홀 주소(RFC 5737 TEST-NET-1)로 connect_timeout 적용 여부를 검증한다.
+    // 클라이언트 타임아웃이 빠지면 OS 기본 커넥트 타임아웃(수십~수백 초)까지 물고 있어
+    // 바깥 20초 타임아웃에 걸려 실패한다.
+    #[tokio::test]
+    async fn refresh_against_unroutable_host_fails_without_hanging() {
+        let dir = tempfile::tempdir().unwrap();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            refresh("http://192.0.2.1", dir.path()),
+        )
+        .await;
+        assert!(result.is_ok(), "20초 안에 안 끝남 (타임아웃 미적용 의심)");
+        assert!(result.unwrap().is_err());
     }
 }

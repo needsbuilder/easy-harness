@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 import mascot from "../assets/mascot.png";
+import { UpdateBanner } from "./UpdateBanner";
 
 const menu = [
   { to: "/welcome", label: "홈" },
@@ -36,6 +37,7 @@ export function AppShell() {
         </nav>
       </aside>
       <main className="min-w-0 flex-1 px-10 py-8">
+        <UpdateBanner />
         <Outlet />
       </main>
     </div>
