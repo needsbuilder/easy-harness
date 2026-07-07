@@ -85,4 +85,4 @@ jobs:
           if [ -n "${{ matrix.target }}" ]; then
             BUNDLE_DIR="target/${{ matrix.target }}/release/bundle"
           fi
-          cargo run --bin scan_secrets -- "$BUNDLE_DIR"
+          cargo run --features dev-tools --bin scan_secrets -- "$BUNDLE_DIR"
