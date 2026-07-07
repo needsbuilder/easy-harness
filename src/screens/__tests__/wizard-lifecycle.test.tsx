@@ -40,8 +40,8 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
 
     vi.mocked(ipc.getDryRun).mockResolvedValue(dryRun);
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
-    vi.mocked(ipc.onProgress).mockResolvedValue(unlistenProgress);
-    vi.mocked(ipc.onLog).mockResolvedValue(unlistenLog);
+    vi.mocked(ipc.subscribeProgress).mockResolvedValue({ attach: vi.fn(), close: unlistenProgress });
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: unlistenLog });
 
     const { unmount } = render(
       <StrictMode>
@@ -53,15 +53,15 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
       </StrictMode>,
     );
 
-    // 구독(onProgress/onLog)이 최소 1쌍은 등록될 때까지 대기.
+    // 구독(subscribeProgress/subscribeLog)이 최소 1쌍은 등록될 때까지 대기.
     await waitFor(() => {
-      expect(ipc.onProgress).toHaveBeenCalled();
-      expect(ipc.onLog).toHaveBeenCalled();
+      expect(ipc.subscribeProgress).toHaveBeenCalled();
+      expect(ipc.subscribeLog).toHaveBeenCalled();
     });
 
-    // 살아있는 구독: 등록은 됐지만, 실제 unmount 전이므로 아직 정리(unlisten)되면 안 된다.
-    // 버그 버전(started ref)에서는 1차 start()의 구독이 체인된 cleanup에 의해
-    // 등록 직후 곧바로 해제되어 이 지점에서 이미 호출돼 있으므로 실패한다.
+    // 살아있는 구독: 등록은 됐지만, 실제 unmount 전이므로 아직 정리(close)되면 안 된다.
+    // StrictMode 이중 마운트에서 1차(죽은) 효과가 공유 구독을 조기에 닫아버리면
+    // 이 지점에서 이미 호출돼 있으므로 실패한다.
     expect(unlistenProgress).not.toHaveBeenCalled();
     expect(unlistenLog).not.toHaveBeenCalled();
 
@@ -69,18 +69,42 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
 
     // 실제 언마운트 후에는 등록된 구독 수만큼만 정리되어야 한다 (dangling 0).
     await waitFor(() => {
-      expect(unlistenProgress).toHaveBeenCalledTimes(vi.mocked(ipc.onProgress).mock.calls.length);
-      expect(unlistenLog).toHaveBeenCalledTimes(vi.mocked(ipc.onLog).mock.calls.length);
+      expect(unlistenProgress).toHaveBeenCalledTimes(vi.mocked(ipc.subscribeProgress).mock.calls.length);
+      expect(unlistenLog).toHaveBeenCalledTimes(vi.mocked(ipc.subscribeLog).mock.calls.length);
     });
-    expect(vi.mocked(ipc.onProgress).mock.calls.length).toBeGreaterThanOrEqual(1);
-    expect(vi.mocked(ipc.onLog).mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(vi.mocked(ipc.subscribeProgress).mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(vi.mocked(ipc.subscribeLog).mock.calls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("startFlow가 실패하면 이미 만든 구독을 닫아 누수를 남기지 않는다", async () => {
+    const closeProgress = vi.fn();
+    const closeLog = vi.fn();
+    vi.mocked(ipc.getDryRun).mockResolvedValue(dryRun);
+    vi.mocked(ipc.subscribeProgress).mockResolvedValue({ attach: vi.fn(), close: closeProgress });
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: closeLog });
+    vi.mocked(ipc.startFlow).mockRejectedValue(new Error("백엔드 거부"));
+
+    render(
+      <MemoryRouter initialEntries={["/wizard/mock-tool"]}>
+        <Routes>
+          <Route path="/wizard/:toolId" element={<Wizard />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // 시작이 실패하면 에러 안내가 뜨고, 그 사이 살렸던 구독 2개는 반드시 닫혀야 한다.
+    expect(await screen.findByText(/시작하지 못했어요/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(closeProgress).toHaveBeenCalledTimes(1);
+      expect(closeLog).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("실모드로 한 번만 시작한다 (StrictMode 이중 마운트 가드)", async () => {
     vi.mocked(ipc.getDryRun).mockResolvedValue(dryRun);
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
-    vi.mocked(ipc.onProgress).mockResolvedValue(vi.fn());
-    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.subscribeProgress).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
 
     render(
       <StrictMode>
@@ -105,11 +129,11 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
       ],
     });
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
-    vi.mocked(ipc.onProgress).mockImplementation(async (_runId, cb) => {
+    vi.mocked(ipc.subscribeProgress).mockImplementation(async (cb) => {
       fireProgress = cb;
-      return vi.fn(() => {});
+      return { attach: vi.fn(), close: vi.fn() };
     });
-    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
     vi.mocked(ipc.provideSecret).mockResolvedValue(undefined);
 
     render(
@@ -144,8 +168,8 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
       ],
       steps: [{ recipeId: "lazycodex", recipeName: "lazycodex", section: "install", stepType: "run_command", friendly: "설치" }],
     });
-    vi.mocked(ipc.onProgress).mockResolvedValue(vi.fn());
-    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.subscribeProgress).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
 
     render(
       <MemoryRouter initialEntries={["/wizard/lazycodex"]}>
@@ -170,8 +194,8 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
       steps: [],
     });
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
-    vi.mocked(ipc.onProgress).mockResolvedValue(vi.fn());
-    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.subscribeProgress).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
 
     render(
       <MemoryRouter initialEntries={["/wizard/claude-code"]}>
@@ -196,11 +220,11 @@ describe("Wizard 생명주기 (StrictMode 구독 정리)", () => {
       steps: [],
     });
     vi.mocked(ipc.startFlow).mockResolvedValue("run-1");
-    vi.mocked(ipc.onProgress).mockImplementation(async (_runId, cb) => {
+    vi.mocked(ipc.subscribeProgress).mockImplementation(async (cb) => {
       fireProgress = cb;
-      return vi.fn(() => {});
+      return { attach: vi.fn(), close: vi.fn() };
     });
-    vi.mocked(ipc.onLog).mockResolvedValue(vi.fn());
+    vi.mocked(ipc.subscribeLog).mockResolvedValue({ attach: vi.fn(), close: vi.fn() });
     vi.mocked(ipc.onPtyData).mockResolvedValue(vi.fn());
 
     render(
