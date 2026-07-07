@@ -74,6 +74,8 @@ jobs:
           releaseName: "이지 하네스 v__VERSION__"
           releaseBody: "새 버전이 나왔어요. 아래 파일로 설치할 수 있어요."
           releaseDraft: true
+          # 릴리스 레포는 코드 히스토리가 달라 현재 커밋 SHA를 못 쓴다 - 릴리스 레포의 main 기준
+          releaseCommitish: main
           args: ${{ matrix.args }}
       - name: 시크릿 스캔 (산출물, 발행 게이트 앞 안전망)
         shell: bash
