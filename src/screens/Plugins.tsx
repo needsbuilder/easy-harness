@@ -1,8 +1,8 @@
-import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { ToolCard } from "../components/ToolCard";
 import { listCatalog } from "../lib/ipc";
+import { useTauriEvent } from "../lib/useTauriEvent";
 import type { CatalogEntry } from "../lib/types";
 
 export function Plugins() {
@@ -15,13 +15,7 @@ export function Plugins() {
     listCatalog().then(setEntries).catch(() => setFailed(true));
   }, []);
   useEffect(load, [load]);
-  useEffect(() => {
-    let un: (() => void) | undefined;
-    void listen("catalog://updated", load).then((u) => {
-      un = u;
-    });
-    return () => un?.();
-  }, [load]);
+  useTauriEvent("catalog://updated", load);
 
   const plugins = entries.filter((e) => e.kind === "plugin");
   const nameOf = useCallback(

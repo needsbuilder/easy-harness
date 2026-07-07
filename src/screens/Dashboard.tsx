@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { PrimaryButton } from "../components/Buttons";
-import { useAppUpdate } from "../lib/appUpdate";
-import { getAppState, listCatalog, onProgress, startFlow } from "../lib/ipc";
+import { getAppState, listCatalog, startFlow, subscribeProgress, type RunSubscription } from "../lib/ipc";
 import type { AppState, CatalogEntry } from "../lib/types";
 
 const formatInstalledAt = (unixSeconds: number) =>
@@ -13,7 +12,6 @@ export function Dashboard() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
   const [removing, setRemoving] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
-  const { phase: updatePhase, install: installUpdate } = useAppUpdate();
 
   const reload = useCallback(() => {
     getAppState().then(setState).catch(() => setState({ installations: [] }));
@@ -34,25 +32,37 @@ export function Dashboard() {
       : "";
     if (!window.confirm(`${warning}${nameOf(id)}을(를) 지울까요? 설정과 기록도 함께 정리돼요.`)) return;
     setRemoving((s) => new Set(s).add(id));
-    try {
-      const runId = await startFlow(id, "uninstall", false);
-      const un = await onProgress(runId, (ev) => {
-        if (ev.status.kind === "done") {
-          un();
-          reload();
-          setRemoving((s) => {
-            const n = new Set(s);
-            n.delete(id);
-            return n;
-          });
-        }
-      });
-    } catch {
+
+    const clear = () =>
       setRemoving((s) => {
         const n = new Set(s);
         n.delete(id);
         return n;
       });
+    let sub: RunSubscription | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      sub?.close();
+      reload();
+      clear();
+    };
+    try {
+      // 리스너를 먼저 살려 두고(버퍼링) startFlow 후 attach → done을 놓쳐 "지우는 중"에서 멈추지 않는다.
+      sub = await subscribeProgress((ev) => {
+        if (ev.status.kind === "done") finish();
+      });
+      const runId = await startFlow(id, "uninstall", false);
+      // 방어책: 끝내 종료 이벤트가 안 와도 90초 뒤엔 "지우는 중"을 풀고 실제 상태를 다시 읽는다.
+      // attach 전에 걸어야, 버퍼에 있던 done이 attach에서 곧바로 finish를 부를 때 그 타이머까지 정리된다.
+      timer = setTimeout(finish, 90_000);
+      sub.attach(runId);
+    } catch {
+      sub?.close();
+      clear();
     }
   };
 
@@ -61,22 +71,6 @@ export function Dashboard() {
 
   return (
     <div>
-      {updatePhase.kind !== "idle" && (
-        <div className="mb-6 flex items-center justify-between rounded-card border border-line-gold bg-surface-gold-tint px-5 py-4">
-          {updatePhase.kind === "available" && (
-            <>
-              <p className="font-bold">이지 하네스 새 버전이 나왔어요. 1분이면 끝나요.</p>
-              <PrimaryButton onClick={installUpdate}>지금 업데이트</PrimaryButton>
-            </>
-          )}
-          {updatePhase.kind === "downloading" && (
-            <p className="font-bold">새 버전을 받는 중이에요 {updatePhase.percent}%</p>
-          )}
-          {updatePhase.kind === "failed" && (
-            <p className="font-bold">업데이트를 받지 못했어요. 다음에 다시 시도할게요.</p>
-          )}
-        </div>
-      )}
       <h1 className="text-title font-extrabold">내 도구</h1>
       {items.length === 0 ? (
         <div className="mt-10 flex flex-col items-start gap-4">

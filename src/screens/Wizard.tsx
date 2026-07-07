@@ -8,7 +8,7 @@ import { MascotBubble } from "../components/MascotBubble";
 import { SecretForm } from "../components/SecretForm";
 import { TerminalPanel } from "../components/TerminalPanel";
 import { WizardStepper } from "../components/WizardStepper";
-import { getDryRun, onLog, onProgress, provideSecret, startFlow } from "../lib/ipc";
+import { getDryRun, provideSecret, startFlow, subscribeLog, subscribeProgress, type RunSubscription } from "../lib/ipc";
 import { eunNeun } from "../lib/josa";
 import { appendLog, initialRunState, runReducer, type RunState } from "../lib/runReducer";
 import type { DryRunReport } from "../lib/types";
@@ -50,7 +50,12 @@ export function Wizard() {
   // 2) 시작: 미리보기가 준비되고, 선행 안내가 없거나 사용자가 눌렀을 때 1회만.
   //    StrictMode 이중 마운트에서도 같은 key면 시작 promise를 재사용한다.
   const shouldStart = preview !== null && (!needsPreflight || confirmed);
-  const startRef = useRef<{ key: string; promise: Promise<string> } | null>(null);
+  type StartEntry = {
+    key: string;
+    refs: number;
+    promise: Promise<{ runId: string; progress: RunSubscription; log: RunSubscription }>;
+  };
+  const startRef = useRef<StartEntry | null>(null);
   useEffect(() => {
     if (!shouldStart) return;
     let cancelled = false;
@@ -58,26 +63,62 @@ export function Wizard() {
     let unLog: (() => void) | undefined;
     const key = `${toolId}:${attempt}`;
     if (!startRef.current || startRef.current.key !== key) {
-      startRef.current = { key, promise: startFlow(toolId, "install", false) };
+      // 구독을 먼저 살리고(버퍼링) → startFlow → attach 순서라야 이른 done을 놓치지 않는다.
+      // 셋 다 key(도구·재시도)당 1회만 실행되도록 promise를 startRef에 공유한다.
+      startRef.current = {
+        key,
+        refs: 0,
+        promise: (async () => {
+          let progress: RunSubscription | undefined;
+          let log: RunSubscription | undefined;
+          try {
+            progress = await subscribeProgress((ev) => setState((s) => runReducer(s, ev)));
+            log = await subscribeLog((line) => setState((s) => appendLog(s, line)));
+            const runId = await startFlow(toolId, "install", false);
+            progress.attach(runId);
+            log.attach(runId);
+            return { runId, progress, log };
+          } catch (e) {
+            // startFlow(또는 구독)이 실패하면 이미 살린 리스너를 여기서 닫는다.
+            // 안 그러면 소비 측 catch는 핸들을 못 받아 리스너가 영구 누수되고,
+            // attach가 끝내 안 불려 subscribeRun 버퍼가 무한정 자란다.
+            progress?.close();
+            log?.close();
+            throw e;
+          }
+        })(),
+      };
     }
+    const entry = startRef.current;
+    entry.refs += 1;
     (async () => {
       try {
-        const newRunId = await startRef.current!.promise;
-        if (cancelled) return;
-        setRunId(newRunId);
-        const p = await onProgress(newRunId, (ev) => setState((s) => runReducer(s, ev)));
-        if (cancelled) { p(); return; }
-        unProgress = p;
-        const l = await onLog(newRunId, (line) => setState((s) => appendLog(s, line)));
-        if (cancelled) { l(); return; }
-        unLog = l;
+        const { runId, progress, log } = await entry.promise;
+        if (cancelled) {
+          // 이 효과는 죽었다(StrictMode 재마운트 또는 진짜 언마운트).
+          // 살아있는 형제 효과가 있으면(refs>0) 그쪽이 구독을 이어받아 정리하고,
+          // 아무도 없으면(refs===0, 진짜 언마운트) 여기서 닫아 리스너 누수를 막는다.
+          if (entry.refs === 0) {
+            progress.close();
+            log.close();
+          }
+          return;
+        }
+        setRunId(runId);
+        unProgress = progress.close;
+        unLog = log.close;
       } catch {
         if (!cancelled) {
           setState((s) => ({ ...s, error: { message: "시작하지 못했어요. 다시 시도해 볼까요?", friendly: "준비 단계" } }));
         }
       }
     })();
-    return () => { cancelled = true; unProgress?.(); unLog?.(); };
+    return () => {
+      cancelled = true;
+      entry.refs -= 1;
+      unProgress?.();
+      unLog?.();
+    };
   }, [shouldStart, toolId, attempt]);
 
   useEffect(() => {

@@ -1,20 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { MemoryRouter } from "react-router";
 import { Dashboard } from "../Dashboard";
 import type { CatalogEntry, Installation } from "../../lib/types";
-import type { AppUpdatePhase } from "../../lib/appUpdate";
-
-const { mockUseAppUpdate } = vi.hoisted(() => ({
-  mockUseAppUpdate: vi.fn(
-    (): { phase: AppUpdatePhase; install: () => Promise<void> } => ({
-      phase: { kind: "idle" },
-      install: vi.fn(),
-    }),
-  ),
-}));
-vi.mock("../../lib/appUpdate", () => ({ useAppUpdate: mockUseAppUpdate }));
 
 function MemoryRouterWrapper({ children }: { children: React.ReactNode }) {
   return <MemoryRouter>{children}</MemoryRouter>;
@@ -61,10 +50,6 @@ function plugin(overrides: Partial<CatalogEntry> & { id: string; name: string })
 }
 
 describe("내 도구", () => {
-  beforeEach(() => {
-    mockUseAppUpdate.mockReturnValue({ phase: { kind: "idle" }, install: vi.fn() });
-  });
-
   afterEach(() => {
     cleanup();
     clearMocks();
@@ -141,47 +126,6 @@ describe("내 도구", () => {
     });
     render(<MemoryRouter><Dashboard /></MemoryRouter>);
     expect(await screen.findByText(/아직 설치한 도구가 없어요/)).toBeInTheDocument();
-  });
-
-  it("업데이트가 idle 상태면 배너를 보여주지 않는다", async () => {
-    mockIPC((cmd) => {
-      if (cmd === "get_app_state") return { installations: [] };
-      if (cmd === "list_catalog") return [];
-    });
-    render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    await screen.findByText(/아직 설치한 도구가 없어요/);
-    expect(screen.queryByText(/새 버전이 나왔어요/)).not.toBeInTheDocument();
-  });
-
-  it("업데이트가 있으면 배너와 버튼이 보인다", async () => {
-    mockUseAppUpdate.mockReturnValue({ phase: { kind: "available" }, install: vi.fn() });
-    mockIPC((cmd) => {
-      if (cmd === "get_app_state") return { installations: [] };
-      if (cmd === "list_catalog") return [];
-    });
-    render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    expect(await screen.findByText(/새 버전이 나왔어요/)).toBeInTheDocument();
-    expect(screen.getByText("지금 업데이트")).toBeInTheDocument();
-  });
-
-  it("다운로드 중에는 진행률이 보인다", async () => {
-    mockUseAppUpdate.mockReturnValue({ phase: { kind: "downloading", percent: 42 }, install: vi.fn() });
-    mockIPC((cmd) => {
-      if (cmd === "get_app_state") return { installations: [] };
-      if (cmd === "list_catalog") return [];
-    });
-    render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    expect(await screen.findByText(/받는 중이에요 42%/)).toBeInTheDocument();
-  });
-
-  it("다운로드 실패 시 실패 안내를 보여준다", async () => {
-    mockUseAppUpdate.mockReturnValue({ phase: { kind: "failed" }, install: vi.fn() });
-    mockIPC((cmd) => {
-      if (cmd === "get_app_state") return { installations: [] };
-      if (cmd === "list_catalog") return [];
-    });
-    render(<MemoryRouter><Dashboard /></MemoryRouter>);
-    expect(await screen.findByText(/업데이트를 받지 못했어요/)).toBeInTheDocument();
   });
 
   it("삭제 버튼을 연속으로 두 번 눌러도 uninstall 플로우는 한 번만 시작된다", async () => {

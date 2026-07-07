@@ -24,6 +24,52 @@ pub fn resize_master(masters: &PtyMasterRegistry, session_id: &str, cols: u16, r
     }
 }
 
+/// UTF-8 조각을 청크 경계에서도 안전하게 이어붙이는 누적기.
+/// PTY는 4096바이트 단위로 읽으므로 멀티바이트 문자가 청크 사이에서 잘릴 수 있다.
+/// 불완전한 꼬리는 다음 push()와 합쳐 재시도하고, 스트림이 끝나면 flush()로
+/// 남은 바이트를 손실 디코딩(대체 문자 U+FFFD)해 흘려보낸다.
+#[derive(Default)]
+struct Utf8Reassembler {
+    carry: Vec<u8>,
+}
+
+impl Utf8Reassembler {
+    fn push(&mut self, bytes: &[u8]) -> String {
+        let mut buf = std::mem::take(&mut self.carry);
+        buf.extend_from_slice(bytes);
+        let mut out = String::new();
+        let mut offset = 0;
+        loop {
+            match std::str::from_utf8(&buf[offset..]) {
+                Ok(s) => {
+                    out.push_str(s);
+                    offset = buf.len();
+                    break;
+                }
+                Err(e) => {
+                    let valid_up_to = e.valid_up_to();
+                    out.push_str(std::str::from_utf8(&buf[offset..offset + valid_up_to]).unwrap());
+                    offset += valid_up_to;
+                    match e.error_len() {
+                        Some(len) => {
+                            out.push('\u{FFFD}');
+                            offset += len;
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        self.carry = buf[offset..].to_vec();
+        out
+    }
+
+    fn flush(&mut self) -> Option<String> {
+        (!self.carry.is_empty())
+            .then(|| String::from_utf8_lossy(&std::mem::take(&mut self.carry)).into_owned())
+    }
+}
+
 pub trait PtyRunner: Send + Sync {
     /// PTY에서 command를 실행하고 종료 코드를 돌려준다.
     /// 실행 중 출력은 구현체가 이벤트로 스트리밍한다.
@@ -142,19 +188,32 @@ impl PtyRunner for PortablePtyRunner {
         let sid = session_id.to_string();
         let read_task = tauri::async_runtime::spawn_blocking(move || {
             let mut buf = [0u8; 4096];
+            let mut utf8 = Utf8Reassembler::default();
             loop {
                 match std::io::Read::read(&mut reader, &mut buf) {
                     Ok(0) | Err(_) => break,
                     Ok(n) => {
-                        let _ = app.emit(
-                            "pty://data",
-                            &PtyDataPayload {
-                                session_id: sid.clone(),
-                                data: String::from_utf8_lossy(&buf[..n]).into_owned(),
-                            },
-                        );
+                        let text = utf8.push(&buf[..n]);
+                        if !text.is_empty() {
+                            let _ = app.emit(
+                                "pty://data",
+                                &PtyDataPayload {
+                                    session_id: sid.clone(),
+                                    data: text,
+                                },
+                            );
+                        }
                     }
                 }
+            }
+            if let Some(text) = utf8.flush() {
+                let _ = app.emit(
+                    "pty://data",
+                    &PtyDataPayload {
+                        session_id: sid.clone(),
+                        data: text,
+                    },
+                );
             }
         });
 
@@ -205,5 +264,45 @@ mod tests {
         assert!(resize_master(&reg, "s", 120, 40));
         let size = reg.lock().unwrap().get("s").unwrap().get_size().unwrap();
         assert_eq!((size.cols, size.rows), (120, 40));
+    }
+
+    #[test]
+    fn utf8_reassembler_handles_korean_split_across_chunk_boundary() {
+        let text = "안녕하세요";
+        let bytes = text.as_bytes();
+        let (first, rest) = bytes.split_at(4);
+        let mut r = Utf8Reassembler::default();
+        let mut out = r.push(first);
+        out.push_str(&r.push(rest));
+        assert_eq!(out, text);
+        assert!(!out.contains('\u{FFFD}'));
+    }
+
+    #[test]
+    fn utf8_reassembler_survives_every_split_point() {
+        let text = "안녕하세요, Claude Code!";
+        let bytes = text.as_bytes();
+        for split_at in 0..=bytes.len() {
+            let (first, rest) = bytes.split_at(split_at);
+            let mut r = Utf8Reassembler::default();
+            let mut out = r.push(first);
+            out.push_str(&r.push(rest));
+            assert_eq!(out, text, "split_at={split_at}");
+        }
+    }
+
+    #[test]
+    fn utf8_reassembler_flushes_truncated_tail_lossily_at_stream_end() {
+        let bytes = "안녕".as_bytes();
+        let (first, _tail) = bytes.split_at(4);
+        let mut r = Utf8Reassembler::default();
+        assert_eq!(r.push(first), "안");
+        assert!(r.flush().unwrap().contains('\u{FFFD}'));
+    }
+
+    #[test]
+    fn utf8_reassembler_still_replaces_genuinely_invalid_bytes() {
+        let mut r = Utf8Reassembler::default();
+        assert_eq!(r.push(&[b'a', 0xFF, b'b']), "a\u{FFFD}b");
     }
 }

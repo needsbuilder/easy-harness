@@ -5,7 +5,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
 export type AppUpdatePhase =
   | { kind: "idle" }
   | { kind: "available" }
-  | { kind: "downloading"; percent: number }
+  | { kind: "downloading"; percent: number | null } // null = 전체 크기를 몰라 진행률을 못 세는 상태
   | { kind: "failed" };
 
 /** 앱 자체 업데이트 훅. 마운트 시 1회 조용히 확인하고, install()로 내려받아 재시작한다. */
@@ -34,7 +34,9 @@ export function useAppUpdate() {
     if (!update) return;
     let total = 0;
     let received = 0;
-    setPhase({ kind: "downloading", percent: 0 });
+    // 전체 크기를 아직 모르니 percent는 null(불확정)로 시작한다. 0%로 두면
+    // 콘텐츠 길이가 안 오는 서버에서 영영 0%에 멈춘 것처럼 보인다.
+    setPhase({ kind: "downloading", percent: null });
     try {
       await update.downloadAndInstall((event) => {
         if (event.event === "Started") total = event.data.contentLength ?? 0;
@@ -44,6 +46,7 @@ export function useAppUpdate() {
             const percent = Math.min(99, Math.round((received / total) * 100));
             setPhase({ kind: "downloading", percent });
           }
+          // total을 모르면 percent는 null(불확정)인 채로 둔다
         }
       });
       await relaunch();
