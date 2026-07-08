@@ -1,5 +1,14 @@
 # HANDOFF — 이지 하네스
 
+## 현재 작업 (2026-07-08) — 소개 랜딩 사이트 + Remotion 시연영상, 배포됨 / 미세조정 대기
+브랜치 `feat/landing-site`(main 미병합). **라이브: https://easyharness.needslab.ai** (Vercel needslab 팀 프로젝트 `easyharness`, CLI 직접 배포. 커스텀 도메인 SSL 정상. needslab.ai 네임서버가 vercel-dns라 자동).
+- 구성: `web/`(Vite+React+Tailwind4 랜딩) · `video/`(Remotion). 스펙/계획: docs/superpowers/specs·plans/2026-07-08-easy-harness-landing*.md
+- 사이트: 히어로(오공이+헤드라인+다운로드 버튼) · 시연영상 · 3단계 · 되는 도구들(공식 아이콘) · 푸터. 반응형·다크. 다운로드 버튼은 GitHub API로 최신 릴리스(v0.1.2) 자산 동적 링크(web/src/lib/releases.ts·useLatestRelease.ts, 테스트 9)
+- 영상: `video/` Remotion, 실제 앱 목업(design/mockups) + 애니메이션, 22초 무음+자막, `web/public/demo.mp4`(4.3MB). Pretendard 임베드로 한글 렌더. 렌더: `cd video && bunx remotion render src/index.ts Demo out/demo.mp4 --codec h264`
+- 공식 아이콘: `web/public/icons/*.png` — 각 도구 공식 사이트 apple-touch-icon(claude.ai·chatgpt.com(google favicon)·openclaw.ai·nousresearch.com·opencode.ai). gajaecode는 공식 로고 못 찾아 초록 G 타일 생성(임시)
+- 재배포: `vercel deploy --prod --cwd web --yes` (git 연동 아님)
+- ⏳ 사용자 확인 대기: ① 히어로 상단 워드마크가 마스코트+텍스트라 큰 오공이와 겹쳐 "오공이 2번" — 텍스트만으로 바꿀지 ② 아이콘 그리드 정렬. playwriter 확장 불안정으로 스크린샷 못 뜸 → 사용자 눈 확인 필요. 미병합/미세조정 후 병합 예정
+
 ## M6 증분 1 완료 (2026-07-08) — 배포 앱 버그 6종 정리, main 머지
 PR #1 squash 머지(main `f1ced91`). CI 3잡(front·rust macos·rust windows) 전판 GREEN. 브랜치 정리 완료. 다음은 M6 잔여 백로그.
 
