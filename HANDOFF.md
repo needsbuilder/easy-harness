@@ -1,7 +1,12 @@
 # HANDOFF — 이지 하네스
 
-## 현재 상태 (2026-07-08) — M6 윈도우 트랙 핵심 완료 (PR #2·#3 main 머지), v0.1.3 릴리스 보류
-PR #2(T1~T4: 실측 CI·lazycodex·verify 보강·서명 스캐폴드) + PR #3(lazycodex omo.cmd 실측 확정) 둘 다 main 머지 완료(최신 `f80276b`). windows-smoke 실측(run 28930310158)으로 실물 검증. v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2).
+## 현재 상태 (2026-07-08) — M6 윈도우 트랙 + 카탈로그 카드 리디자인 완료, v0.1.3 릴리스 보류
+- **M6 윈도우 트랙**: PR #2(T1~T4: 실측 CI·lazycodex·verify 보강·서명 스캐폴드) + PR #3(lazycodex omo.cmd 실측 확정) main 머지. windows-smoke 실측(run 28930310158)으로 실물 검증.
+- **카탈로그 카드 리디자인**: PR #4 main 머지(최신 `c580c9e`). 도구 카드 3열(그리드 lg:grid-cols-3)·직사각형·간결화(아이콘·이름·설명만, 배지/가격/출처/버전 제거). ToolCard.tsx + Catalog/Plugins + 테스트.
+- v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2).
+
+### ⏳ 다음 후보: 카탈로그 "실제 설치 감지" (사용자 요청, 별도 트랙 대기)
+현재 카탈로그 ✓(설치됨)는 `to_catalog_entries`(`commands.rs:85` `installed: installation.is_some()`)가 **`installed.json`(이지하네스가 설치한 기록)만** 읽어서 정함. 시스템 실제 설치는 감지 안 함 → 사용자가 따로 깐 hermes·openclaw·im-not-ai 등이 ✓ 안 뜸. 감지 machinery는 이미 있음(레시피 `detect` 스텝 + `probe.rs`의 `probe_tool_version`) — 카탈로그 로딩 시 각 도구 detect를 돌리도록 배선하면 됨. 고려: 로딩 시 13개 감지 명령(병렬화·"확인 중" 상태), "설치됨" 의미 변화, UI 로딩+테스트. 착수 시 brainstorming/plan부터.
 
 스펙/계획: `docs/superpowers/specs|plans/2026-07-08-easy-harness-m6-windows-track*.md`. 레저: `.superpowers/sdd/progress.md` 하단.
 
