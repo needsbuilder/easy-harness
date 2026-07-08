@@ -1,4 +1,5 @@
 import { Badge } from "./Badge";
+import { toolIconFor } from "../lib/toolIcons";
 import type { CatalogEntry } from "../lib/types";
 
 export function ToolCard({ entry, onSelect, resolveName }: {
@@ -19,8 +20,12 @@ export function ToolCard({ entry, onSelect, resolveName }: {
           ✓
         </span>
       )}
-      <span className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-surface-gold-tint text-title font-extrabold text-txt-gold">
-        {entry.name.charAt(0)}
+      <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[12px] bg-surface-gold-tint text-title font-extrabold text-txt-gold">
+        {toolIconFor(entry.id) ? (
+          <img src={toolIconFor(entry.id)} alt="" className="h-full w-full object-cover" />
+        ) : (
+          entry.name.charAt(0)
+        )}
       </span>
       <h3 className="mt-3 text-subtitle font-bold">{entry.name}</h3>
       <p className="mt-1 text-body text-txt-secondary dark:text-txt-secondary-dark">{entry.easyDescription}</p>
