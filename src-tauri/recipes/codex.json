@@ -66,7 +66,8 @@
         ]
       },
       "verify": [
-        { "type": "check_command", "friendly": "Codex가 잘 응답하는지 확인하고 있어요", "command": "cmd", "args": ["/C", "codex login status"] }
+        { "type": "check_command", "friendly": "Codex가 잘 응답하는지 확인하고 있어요", "command": "cmd", "args": ["/C", "codex login status"] },
+        { "type": "run_command", "friendly": "ChatGPT 로그인이 살아 있는지 볼게요", "command": "powershell", "args": ["-Command", "if (-not (codex login status 2>&1 | Select-String -SimpleMatch 'Logged in' -Quiet)) { exit 1 }"] }
       ],
       "update": [
         { "type": "download_run", "friendly": "Codex를 새 버전으로 바꾸고 있어요", "url": "https://chatgpt.com/codex/install.ps1", "file_name": "codex-install.ps1", "command": "powershell", "args": ["-ExecutionPolicy", "Bypass", "-File", "{{file}}"] }

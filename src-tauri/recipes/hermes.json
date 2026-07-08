@@ -66,7 +66,8 @@
         ]
       },
       "verify": [
-        { "type": "check_command", "friendly": "Hermes 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "hermes doctor"] }
+        { "type": "check_command", "friendly": "Hermes 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "hermes doctor"] },
+        { "type": "run_command", "friendly": "Nous Portal 로그인이 살아 있는지 볼게요", "command": "powershell", "args": ["-Command", "if (-not (hermes auth status nous 2>&1 | Select-String -SimpleMatch 'logged in' -Quiet)) { exit 1 }"] }
       ],
       "update": [
         { "type": "run_command", "friendly": "Hermes를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "hermes update --yes"] }

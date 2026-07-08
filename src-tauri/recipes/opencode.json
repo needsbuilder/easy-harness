@@ -66,7 +66,8 @@
         ]
       },
       "verify": [
-        { "type": "check_command", "friendly": "OpenCode가 잘 응답하는지 확인하고 있어요", "command": "cmd", "args": ["/C", "opencode --version"] }
+        { "type": "check_command", "friendly": "OpenCode가 잘 응답하는지 확인하고 있어요", "command": "cmd", "args": ["/C", "opencode --version"] },
+        { "type": "run_command", "friendly": "로그인 정보가 잘 저장됐는지 볼게요", "command": "powershell", "args": ["-Command", "if (-not (opencode auth list 2>&1 | Select-String -Pattern 'oauth|api' -Quiet)) { exit 1 }"] }
       ],
       "update": [
         { "type": "run_command", "friendly": "OpenCode를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "npm install -g opencode-ai@latest"] }

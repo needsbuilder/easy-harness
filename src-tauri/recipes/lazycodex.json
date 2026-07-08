@@ -33,13 +33,13 @@
     "windows": {
       "prerequisites": ["nodejs-lts"],
       "detect": [
-        { "type": "path_check", "friendly": "LazyCodex가 이미 붙어 있는지 볼게요", "path": "{{home}}/.local/bin/omo" }
+        { "type": "check_command", "friendly": "LazyCodex가 이미 붙어 있는지 볼게요", "command": "cmd", "args": ["/C", "omo --version"] }
       ],
       "install": [
         { "type": "run_command", "friendly": "LazyCodex를 Codex에 붙이고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai@latest install --no-tui"] }
       ],
       "verify": [
-        { "type": "path_check", "friendly": "잘 붙었는지 확인하고 있어요", "path": "{{home}}/.local/bin/omo" }
+        { "type": "check_command", "friendly": "잘 붙었는지 확인하고 있어요", "command": "cmd", "args": ["/C", "omo --version"] }
       ],
       "update": [
         { "type": "run_command", "friendly": "LazyCodex를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai@latest install --no-tui"] }
@@ -47,9 +47,7 @@
       "uninstall": [
         { "type": "run_command", "friendly": "LazyCodex를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai uninstall"] }
       ],
-      "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "npx --yes lazycodex-ai uninstall"] }
-      ]
+      "rollback": []
     }
   }
 }
