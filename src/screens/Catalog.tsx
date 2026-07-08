@@ -38,7 +38,7 @@ export function Catalog() {
           </button>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {harnesses.map((e) => (
             <ToolCard key={e.id} entry={e} onSelect={(id) => navigate(`/wizard/${id}`)} />
           ))}
