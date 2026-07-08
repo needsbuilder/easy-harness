@@ -24,7 +24,10 @@ export function Hero({
         }}
       />
       <div className="relative mx-auto flex max-w-4xl flex-col items-center px-6 pt-16 pb-14 text-center">
-        <img src="/wordmark.png" alt="이지 하네스" className="h-9 object-contain" />
+        <div className="flex items-center gap-2">
+          <img src="/mascot.png" alt="" className="h-9 w-9 object-contain" />
+          <span className="text-xl font-extrabold tracking-tight">이지 하네스</span>
+        </div>
         <img
           src="/mascot.png"
           alt=""
