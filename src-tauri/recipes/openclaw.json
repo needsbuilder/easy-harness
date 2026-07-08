@@ -66,7 +66,8 @@
         ]
       },
       "verify": [
-        { "type": "check_command", "friendly": "OpenClaw 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "openclaw --version"] }
+        { "type": "check_command", "friendly": "OpenClaw 상태를 점검하고 있어요", "command": "cmd", "args": ["/C", "openclaw --version"] },
+        { "type": "run_command", "friendly": "모델 연결이 잘 됐는지 볼게요", "command": "powershell", "args": ["-Command", "if (-not (openclaw models status --json | Select-String -Pattern 'missingProvidersInUse.:.\\[\\]' -Quiet)) { exit 1 }"] }
       ],
       "update": [
         { "type": "run_command", "friendly": "OpenClaw를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "openclaw update"] }
