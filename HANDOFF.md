@@ -5,8 +5,14 @@
 - **카탈로그 카드 리디자인**: PR #4 main 머지(최신 `c580c9e`). 도구 카드 3열(그리드 lg:grid-cols-3)·직사각형·간결화(아이콘·이름·설명만, 배지/가격/출처/버전 제거). ToolCard.tsx + Catalog/Plugins + 테스트.
 - v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2).
 
-### ⏳ 다음 후보: 카탈로그 "실제 설치 감지" (사용자 요청, 별도 트랙 대기)
-현재 카탈로그 ✓(설치됨)는 `to_catalog_entries`(`commands.rs:85` `installed: installation.is_some()`)가 **`installed.json`(이지하네스가 설치한 기록)만** 읽어서 정함. 시스템 실제 설치는 감지 안 함 → 사용자가 따로 깐 hermes·openclaw·im-not-ai 등이 ✓ 안 뜸. 감지 machinery는 이미 있음(레시피 `detect` 스텝 + `probe.rs`의 `probe_tool_version`) — 카탈로그 로딩 시 각 도구 detect를 돌리도록 배선하면 됨. 고려: 로딩 시 13개 감지 명령(병렬화·"확인 중" 상태), "설치됨" 의미 변화, UI 로딩+테스트. 착수 시 brainstorming/plan부터.
+### 🚫 보류 결정: 카탈로그 "실제 설치 감지" (2026-07-08 Agent Teams 설계 검토 후 사용자 보류)
+갭 자체는 실재: 카탈로그 ✓는 `to_catalog_entries`(`commands.rs:85` `installed: installation.is_some()`)가 **installed.json(이지하네스 설치 기록)만** 읽어 → 사용자가 따로 깐 도구는 ✓ 안 뜸.
+**Agent Teams 3인(perf-ux·backend-arch·devils-advocate) 설계 검토 결과 "지금 형태로 만들지 말자"로 사용자가 보류(B) 결정.** 근거(순진하게 재제안 금지):
+- **삭제 안전장치 훼손(핵심)**: uninstall 시 "지우면 X도 멈춰요" 경고(`Dashboard.tsx:26-29`)가 프론트 `catalog.installed`에 100% 의존. `build_plan`은 Uninstall에서 dependents 체크 없음 → 이 경고가 유일 안전망. live detect가 flaky하면(오탐/멈춤) 경고가 조용히 사라져 필요한 도구를 삭제하는 파괴적 사고 유발.
+- **이름 충돌 오탐**: `hermes`(이 앱 AI 도구) vs Facebook Hermes JS 엔진 CLI 동명. `execute_step`은 exit code만 보고 stdout 미검증 → 무관한 프로그램을 ✓로 오판 가능.
+- **타임아웃 전무**: 프로세스 실행 경로에 타임아웃 0건. detect 대부분 `/bin/zsh -lc`(로그인 셸)이라 순차 시 최악 20초+, 멈추면 카탈로그 영구 행.
+- **윈도우 PATH 미해결**: `.local\bin` 레지스트리 PATH 반영 여부가 윈도우 트랙에서 "실기 확인 필요"로 남은 상태 위에 얹는 셈.
+**재착수 조건(만약)**: 자동 상시 감지 X → "내 도구 스캔하기" 버튼식 + 하드 타임아웃(fail-open="확인못함") + installed.json 안 건드림(삭제 경고는 기록 기반 유지) + 이름충돌 stdout 검증. 코드 구조는 별도 async `detect_installed` 커맨드(list_catalog 무변경, 기존 execute_step·probe_tool_version 재사용).
 
 스펙/계획: `docs/superpowers/specs|plans/2026-07-08-easy-harness-m6-windows-track*.md`. 레저: `.superpowers/sdd/progress.md` 하단.
 
