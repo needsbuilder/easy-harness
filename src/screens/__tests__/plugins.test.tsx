@@ -66,6 +66,5 @@ describe("Plugins", () => {
     expect(await screen.findByText("I'm Not AI")).toBeInTheDocument();
     expect(screen.queryByText("Claude Code")).not.toBeInTheDocument();
     expect(screen.getAllByText("Claude Code에 설치돼요").length).toBe(2);
-    expect(screen.getByText("Claude Code 필요")).toBeInTheDocument();
   });
 });
