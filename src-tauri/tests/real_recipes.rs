@@ -171,19 +171,20 @@ fn lazycodex_recipe_pulls_codex_and_node_first() {
         );
     }
 
-    // 윈도우 경로버그 회귀 방지(실측 전 안전장치): detect/verify는 확장자 없는
-    // path_check가 아니라 omo --version 확인이어야 하고, verify false-negative가
-    // 방금 설치한 걸 지우지 않도록 windows rollback은 비파괴(빈 배열)여야 한다.
+    // 윈도우 경로버그 회귀 방지(2026-07-08 GitHub Actions 윈도우 러너 실측 확정):
+    // lazycodex-ai는 omo를 %USERPROFILE%\.local\bin\omo.cmd 로 설치하고 .local\bin을
+    // PATH에 넣지 않는다. 따라서 detect/verify는 실측된 절대경로 omo.cmd 존재 확인이어야 하고,
+    // 안전장치로 windows rollback은 비파괴(빈 배열)여야 한다.
     let win = r.platforms.get(Platform::Windows).unwrap();
     let win_detect = format!("{:?}", win.detect);
     assert!(
-        win_detect.contains("omo") && win_detect.contains("--version"),
-        "lazycodex windows detect는 omo --version 확인이어야 함: {win_detect}"
+        win_detect.contains("omo.cmd"),
+        "lazycodex windows detect는 실측된 omo.cmd 절대경로 확인이어야 함: {win_detect}"
     );
     let win_verify = format!("{:?}", win.verify);
     assert!(
-        win_verify.contains("omo") && win_verify.contains("--version"),
-        "lazycodex windows verify는 omo --version 확인이어야 함(확장자 없는 path_check 금지): {win_verify}"
+        win_verify.contains("omo.cmd"),
+        "lazycodex windows verify는 실측된 omo.cmd 절대경로 확인이어야 함(확장자 없는 경로 금지): {win_verify}"
     );
     let win_rollback = format!("{:?}", win.rollback);
     assert!(

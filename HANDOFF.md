@@ -1,7 +1,7 @@
 # HANDOFF — 이지 하네스
 
-## 현재 상태 (2026-07-08) — M6 윈도우 트랙 진행 중 (브랜치 feat/m6-windows-track)
-직전 완료분(랜딩+영상+공식아이콘)은 main에 있고 라이브(https://easyharness.needslab.ai). v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2). 지금은 M6 윈도우 트랙 작업 중.
+## 현재 상태 (2026-07-08) — M6 윈도우 트랙 실측 완료, lazycodex 확정 PR 대기 (브랜치 fix/lazycodex-omo-cmd-path)
+PR #2(T1~T4)는 main에 머지됨. windows-smoke 실측(run 28930310158)까지 끝내고 lazycodex 실제 경로를 확정해 새 브랜치에 커밋(PR 예정). v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2).
 
 스펙/계획: `docs/superpowers/specs|plans/2026-07-08-easy-harness-m6-windows-track*.md`. 레저: `.superpowers/sdd/progress.md` 하단.
 
@@ -12,11 +12,16 @@
 - **T4 코드서명 스캐폴드**: release.yml에 조건부 서명 주입 스텝(시크릿 `WINDOWS_SIGN_COMMAND` 있을 때만 jq로 signCommand 주입). tauri.conf 무변경 → **회귀 0**
 - 검증: cargo test --all-features(lib 75+통합 16+scan_secrets 6) · fmt · clippy · front test+build 전부 통과. JSON/YAML 유효성 확인
 
+## 실측 결과 (windows-smoke run 28930310158, 2026-07-08)
+- **lazycodex 확정**: omo가 `%USERPROFILE%\.local\bin\omo.cmd`로 설치되고 `.local\bin`은 PATH 미등록 → 임시안 `omo --version`도 실패. detect/verify를 절대경로 `path_check {{home}}/.local/bin/omo.cmd`로 확정(브랜치 fix/lazycodex-omo-cmd-path, 로컬 테스트 GREEN)
+- **verify 보강 검증**: openclaw/opencode 완전 통과(npm 전역 `C:\npm\prefix`가 PATH). codex/hermes/claude-code는 `.local\bin`이 CI 세션 PATH 미반영이라 probe에선 미해결이나 powershell은 구문에러 없이 exit 1(커맨드 구조 정상)
+- **잔여 확인 필요(별도)**: claude-code·codex의 `.local\bin`이 레지스트리 PATH에 등록되는지 + 앱 process.rs PATH 새로고침이 실행 시 잡는지 — probe로는 확정 불가(앱 실기 확인 필요). 이 트랙 이전부터 있던 PATH 의존
+- 리포트 원본: 이 세션 scratchpad `probe/*.md`(9종). 재현: gh로 windows-smoke.yml dispatch
+
 ## 다음 스텝
-- **커밋 + PR**(easy-harness private 소스, main 대상). 그 후:
-- **T5(형이 GitHub에서 수행)**: Actions → "Windows Smoke (실측)" → Run workflow(브랜치 feat/m6-windows-track). 맥에선 못 돌리니 형이 버튼 눌러야 첫 실측 데이터가 나옴. 리포트에서 실제 `omo` 경로·파일명, 하네스 설치 경로, verify 셸 배관 종료코드 판독
-- **T6(실측 후)**: lazycodex를 실측 절대경로 path_check로 업그레이드, k-skill/im-not-ai 경로·매칭 교정, verify 커맨드가 실측에서 깨졌으면 조정. real_recipes.rs 동기화
-- **T7**: CI GREEN 후 머지. 레시피 변경 전달 = 원격 번들(`scripts/build_recipes_bundle.sh` → easy-harness-recipes)로 v0.1.2 사용자에 선반영 가능하나, 방침상 기본은 v0.1.3 일괄
+- **fix/lazycodex-omo-cmd-path PR → 머지**(CI GREEN 후) = M6 윈도우 트랙 핵심 마무리
+- (선택) 위 "잔여 확인 필요"의 `.local\bin` PATH를 윈도우 실기(tauri dev)에서 확인 — 필요 시 harness detect/verify도 절대경로화
+- 레시피 변경 전달 = 원격 번들(`scripts/build_recipes_bundle.sh` → easy-harness-recipes)로 v0.1.2 사용자에 선반영 가능하나, 방침상 기본은 v0.1.3 일괄
 
 ## 주의/결정
 - 인증(로그인) 필요한 verify는 헤드리스 CI가 검증 못함 → 인증 문자열은 mac 실측값 재사용. CI는 설치 경로·셸 배관까지만
