@@ -1,0 +1,42 @@
+name: Windows Smoke (실측)
+
+# 조사용(investigative) 워크플로우.
+# windows-latest 러너에서 레시피의 windows 설치 커맨드를 실제로 돌려, 경로·커맨드가 진짜로 통과하는지 실측한다.
+# 서드파티를 실제로 네트워크에서 받아 설치하므로 상시 push 게이트가 아니라 "수동 실행(workflow_dispatch)"이다.
+# 상시 스모크 게이트로 승격하려면: 아래 on: 에 schedule(cron 주 1회)을 추가하고
+# 이 잡을 브랜치 보호 규칙의 required check로 지정한다. 그 전까지는 soft-fail 리포트로만 데이터를 모은다.
+on:
+  workflow_dispatch:
+    inputs:
+      recipe:
+        description: "실측할 레시피 id(쉼표 구분) 또는 all"
+        default: "lazycodex,k-skill,claude-code,im-not-ai,codex,openclaw,hermes,opencode,gajaecode"
+        type: string
+
+concurrency:
+  group: windows-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      # 플러그인 prereq(nodejs-lts)는 러너 기본 Node로 대체(winget 회피, 무인·빠름).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: 레시피 windows 실측 (detect/install/verify, auth 제외)
+        shell: pwsh
+        continue-on-error: true
+        run: ./.github/scripts/windows-probe.ps1 -Recipes "${{ inputs.recipe }}"
+      - name: 실측 리포트 아티팩트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-probe-report
+          path: ${{ runner.temp }}/windows-probe/**
+          if-no-files-found: warn

@@ -170,6 +170,26 @@ fn lazycodex_recipe_pulls_codex_and_node_first() {
             "{p:?}: 채택 안 한 플래그"
         );
     }
+
+    // 윈도우 경로버그 회귀 방지(실측 전 안전장치): detect/verify는 확장자 없는
+    // path_check가 아니라 omo --version 확인이어야 하고, verify false-negative가
+    // 방금 설치한 걸 지우지 않도록 windows rollback은 비파괴(빈 배열)여야 한다.
+    let win = r.platforms.get(Platform::Windows).unwrap();
+    let win_detect = format!("{:?}", win.detect);
+    assert!(
+        win_detect.contains("omo") && win_detect.contains("--version"),
+        "lazycodex windows detect는 omo --version 확인이어야 함: {win_detect}"
+    );
+    let win_verify = format!("{:?}", win.verify);
+    assert!(
+        win_verify.contains("omo") && win_verify.contains("--version"),
+        "lazycodex windows verify는 omo --version 확인이어야 함(확장자 없는 path_check 금지): {win_verify}"
+    );
+    let win_rollback = format!("{:?}", win.rollback);
+    assert!(
+        !win_rollback.contains("uninstall"),
+        "lazycodex windows rollback은 비파괴여야 함(verify false-negative가 설치를 지우면 안 됨): {win_rollback}"
+    );
 }
 
 #[test]
@@ -289,19 +309,55 @@ fn bundle_built_from_recipes_dir_parses() {
 #[test]
 fn auth_verify_steps_check_real_login() {
     let cat = catalog();
+    // 니들은 mac·windows verify 둘 다에 등장하는 "로그인 살아있음" 표식으로 잡는다
+    // (mac은 grep 패턴, windows는 powershell Select-String 패턴에 같은 문자열이 들어감).
     for (id, needle) in [
-        ("codex", "codex login status"),
-        ("opencode", "opencode auth list"),
-        ("openclaw", "openclaw models status"),
-        ("hermes", "hermes auth status nous"),
+        ("codex", "Logged in"),
+        ("opencode", "oauth|api"),
+        ("openclaw", "missingProvidersInUse"),
+        ("hermes", "logged in"),
     ] {
         let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
-        let spec = r.platforms.get(Platform::Mac).unwrap();
-        let hit = spec.verify.iter().any(|s| match s {
-            Step::RunCommand { args, .. } => args.iter().any(|a| a.contains(needle)),
-            _ => false,
-        });
-        assert!(hit, "{id}: mac verify에 인증 실검증 스텝 필요");
+        for p in [Platform::Mac, Platform::Windows] {
+            let spec = r
+                .platforms
+                .get(p)
+                .unwrap_or_else(|| panic!("{id} {p:?} 섹션 없음"));
+            let hit = spec.verify.iter().any(|s| match s {
+                Step::RunCommand { args, .. } => args.iter().any(|a| a.contains(needle)),
+                _ => false,
+            });
+            assert!(hit, "{id} {p:?}: verify에 인증 실검증 스텝 필요");
+        }
+    }
+}
+
+#[test]
+fn windows_verify_gates_have_exit_guard() {
+    // windows verify의 인증 실검증은 powershell Select-String으로 한다.
+    // Select-String -Quiet는 미매치 시에도 프로세스 종료코드를 0으로 두므로,
+    // 게이트로 쓰려면 반드시 `if (-not (...)) { exit 1 }` 가드가 있어야 한다.
+    let cat = catalog();
+    for id in ["codex", "hermes", "openclaw", "opencode"] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        let win = r.platforms.get(Platform::Windows).unwrap();
+        let mut found = false;
+        for s in &win.verify {
+            if let Step::RunCommand { args, .. } = s {
+                let joined = args.join(" ");
+                if joined.contains("Select-String") {
+                    found = true;
+                    assert!(
+                        joined.contains("exit 1"),
+                        "{id}: Select-String 게이트는 미매치 시 exit 1 가드가 필요: {joined}"
+                    );
+                }
+            }
+        }
+        assert!(
+            found,
+            "{id}: windows verify에 Select-String 인증 검증 스텝 필요"
+        );
     }
 }
 

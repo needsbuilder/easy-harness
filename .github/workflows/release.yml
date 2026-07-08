@@ -36,6 +36,10 @@ jobs:
             args: ""
             target: ""
     runs-on: ${{ matrix.platform }}
+    env:
+      # 윈도우 서명 스캐폴드(M6): 시크릿을 job env로 승격해야 step if:에서 존재 판정이 된다
+      # (step-level env는 자기 if:에서 안 보이는 함정). 미등록이면 빈 문자열 → 서명 스텝 스킵 → 무서명 빌드(회귀 0).
+      WINDOWS_SIGN_COMMAND: ${{ secrets.WINDOWS_SIGN_COMMAND }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -54,7 +58,19 @@ jobs:
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
-      # 윈도우 코드 서명 자리 (M5 보류): WINDOWS_SIGN_* 시크릿 등록 시 여기에 서명 스텝 추가
+      # 윈도우 코드 서명 스캐폴드(M6): WINDOWS_SIGN_COMMAND 시크릿이 있을 때만 tauri.conf.json에
+      # bundle.windows.signCommand를 주입한다(러너 작업본에만, 커밋 아님). 미등록이면 스텝 스킵 → 무서명 빌드 그대로.
+      # 인증서 확보 시: `gh secret set WINDOWS_SIGN_COMMAND`(예: signtool 호출 또는 클라우드 서명 CLI, %1이 서명할 파일)
+      # + 서명 도구가 읽을 크리덴셜을 아래 스텝 env에 추가. tauri-action은 tauri build만 호출하므로 서명은 config로 제어된다.
+      - name: 윈도우 서명 구성 주입 (시크릿 있을 때만, 없으면 no-op)
+        if: runner.os == 'Windows' && env.WINDOWS_SIGN_COMMAND != ''
+        shell: bash
+        run: |
+          tmp=$(mktemp)
+          jq --arg cmd "$WINDOWS_SIGN_COMMAND" \
+            '.bundle.windows = ((.bundle.windows // {}) + {signCommand: $cmd})' \
+            src-tauri/tauri.conf.json > "$tmp" && mv "$tmp" src-tauri/tauri.conf.json
+          echo "윈도우 서명 구성 주입됨 (signCommand)"
       - name: Tauri 빌드·서명·공증·draft 릴리스
         uses: tauri-apps/tauri-action@v1
         env:
