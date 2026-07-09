@@ -1,17 +1,7 @@
-import { type OS, type Picks } from "../lib/releases";
+import { type Picks } from "../lib/releases";
 import { DownloadButton } from "./DownloadButton";
 
-export function Hero({
-  os,
-  picks,
-  version,
-  failed,
-}: {
-  os: OS;
-  picks: Picks;
-  version: string | null;
-  failed: boolean;
-}) {
+export function Hero({ picks, failed }: { picks: Picks; failed: boolean }) {
   return (
     <section className="relative overflow-hidden">
       {/* 은은한 골드 방사형 배경 */}
@@ -42,17 +32,8 @@ export function Hero({
           복잡한 설치와 로그인은 오공이가 다 해드려요. 카드만 고르면 끝이에요.
         </p>
         <div className="mt-9">
-          <DownloadButton os={os} picks={picks} failed={failed} />
+          <DownloadButton picks={picks} failed={failed} />
         </div>
-        <p className="mt-5 text-sm text-txt-secondary">
-          무료로 쓸 수 있어요 · 애플 공증과 서명을 마친 안전한 앱이에요
-          {version && (
-            <>
-              {" · "}
-              <span className="font-mono">{version}</span>
-            </>
-          )}
-        </p>
       </div>
     </section>
   );
