@@ -1,7 +1,7 @@
 import { DocLayout } from "../components/DocLayout";
 import { BUSINESS } from "../lib/links";
 
-export const EFFECTIVE_DATE = "2026년 7월 9일";
+export const EFFECTIVE_DATE = "2026년 7월 10일";
 
 export default function Terms() {
   return (
