@@ -1,46 +1,46 @@
 # HANDOFF — 이지 하네스
 
-## 현재 상태 (2026-07-08) — M6 윈도우 트랙 + 카탈로그 카드 리디자인 완료, v0.1.3 릴리스 보류
-- **M6 윈도우 트랙**: PR #2(T1~T4: 실측 CI·lazycodex·verify 보강·서명 스캐폴드) + PR #3(lazycodex omo.cmd 실측 확정) main 머지. windows-smoke 실측(run 28930310158)으로 실물 검증.
-- **카탈로그 카드 리디자인**: PR #4 main 머지(최신 `c580c9e`). 도구 카드 3열(그리드 lg:grid-cols-3)·직사각형·간결화(아이콘·이름·설명만, 배지/가격/출처/버전 제거). ToolCard.tsx + Catalog/Plugins + 테스트.
-- v0.1.3 앱 릴리스는 "다 정리하고 한 번에" 방침으로 **여전히 보류**(배포된 앱은 v0.1.2).
+## 현재 작업 (2026-07-09) — 랜딩페이지 리디자인 + 약관 + 리모션 데모영상
+사용자 요청으로 랜딩페이지를 "세련되게" 리디자인 중. **클로드 디자인(claude.ai/design)에 시안**으로 만들고 → 확정 후 실제 `web/` React 코드로 이식 예정. **배포는 리모션 영상까지 다 만든 뒤 한 번에**(사용자 결정, 며칠 뒤. 서두르지 않음).
 
-### 🚫 보류 결정: 카탈로그 "실제 설치 감지" (2026-07-08 Agent Teams 설계 검토 후 사용자 보류)
-갭 자체는 실재: 카탈로그 ✓는 `to_catalog_entries`(`commands.rs:85` `installed: installation.is_some()`)가 **installed.json(이지하네스 설치 기록)만** 읽어 → 사용자가 따로 깐 도구는 ✓ 안 뜸.
-**Agent Teams 3인(perf-ux·backend-arch·devils-advocate) 설계 검토 결과 "지금 형태로 만들지 말자"로 사용자가 보류(B) 결정.** 근거(순진하게 재제안 금지):
-- **삭제 안전장치 훼손(핵심)**: uninstall 시 "지우면 X도 멈춰요" 경고(`Dashboard.tsx:26-29`)가 프론트 `catalog.installed`에 100% 의존. `build_plan`은 Uninstall에서 dependents 체크 없음 → 이 경고가 유일 안전망. live detect가 flaky하면(오탐/멈춤) 경고가 조용히 사라져 필요한 도구를 삭제하는 파괴적 사고 유발.
-- **이름 충돌 오탐**: `hermes`(이 앱 AI 도구) vs Facebook Hermes JS 엔진 CLI 동명. `execute_step`은 exit code만 보고 stdout 미검증 → 무관한 프로그램을 ✓로 오판 가능.
-- **타임아웃 전무**: 프로세스 실행 경로에 타임아웃 0건. detect 대부분 `/bin/zsh -lc`(로그인 셸)이라 순차 시 최악 20초+, 멈추면 카탈로그 영구 행.
-- **윈도우 PATH 미해결**: `.local\bin` 레지스트리 PATH 반영 여부가 윈도우 트랙에서 "실기 확인 필요"로 남은 상태 위에 얹는 셈.
-**재착수 조건(만약)**: 자동 상시 감지 X → "내 도구 스캔하기" 버튼식 + 하드 타임아웃(fail-open="확인못함") + installed.json 안 건드림(삭제 경고는 기록 기반 유지) + 이름충돌 stdout 검증. 코드 구조는 별도 async `detect_installed` 커맨드(list_catalog 무변경, 기존 execute_step·probe_tool_version 재사용).
+### 클로드 디자인 프로젝트 (시안)
+- project_id `236d59c1-aaf3-4c8e-a0f9-e389c9d13cff` · url https://claude.ai/design/p/236d59c1-aaf3-4c8e-a0f9-e389c9d13cff
+- 파일: `landing.dc.html`(랜딩) · `terms.dc.html`(이용약관) · `privacy.dc.html`(개인정보처리방침) · support.js
+- 실물 이미지는 배포된 랜딩 `easyharness.vercel.app`(안정적 공개 별칭)에서 참조 — mascot.png, icons/*.png, demo.mp4. (base64 인라인은 LLM이 대용량 재현 불가라 URL 참조로 우회)
 
-스펙/계획: `docs/superpowers/specs|plans/2026-07-08-easy-harness-m6-windows-track*.md`. 레저: `.superpowers/sdd/progress.md` 하단.
+### 랜딩 시안 확정 사항 (사용자 피드백 반영 완료)
+- 히어로: 좌우 비대칭(좌 헤드라인+다운로드, 우 오공이 광배+근두운링+float). "AI 코딩 도구" 골드 밑줄. 다운로드 버튼 윈도우(골드)·맥(테두리) + 공식 아이콘.
+- 데모 섹션: **임시로 앱 카탈로그 CSS 목업** (리모션 영상 완성되면 교체 예정)
+- 스텝: 카드 3개(01/02/03). **카드 사이 궤적선은 사용자가 "이상하다"고 해서 제거함**
+- 도구: 실물 로고 카드 그리드 + 플러그인 골드 칩
+- **색: 골드 단색 톤으로 통일. 청록(mint) UI는 사용자가 "짜친다"고 해서 전부 제거**(라벨·궤적·노드·칩점·glow). 마스코트 구름의 민트만 남김(이미지라). → 재도입 금지
+- 상단 GitHub는 릴리스가 아니라 **레포 링크**(스타 유도). "다른 버전 보기" 제거.
+- 규칙: em dash·이모지 금지, Pretendard, word-break:keep-all(한글 어절 줄바꿈)
 
-### 이번 세션 완료 (브랜치 feat/m6-windows-track, 로컬 게이트 GREEN — 커밋/PR 예정)
-- **T1 실측 CI 인프라**: `.github/workflows/windows-smoke.yml`(workflow_dispatch·windows-latest) + `.github/scripts/windows-probe.ps1`(레시피 JSON 직접 읽어 windows detect/install/verify 실행, auth 스킵, 실제 산출물 경로 스캔 → STEP_SUMMARY+아티팩트)
-- **T2 lazycodex 경로버그**: windows detect/verify를 확장자 없는 path_check → `cmd /C "omo --version"`. windows rollback을 `[]`(비파괴)로 — verify 오판이 방금 설치한 걸 지우던 버그 차단
-- **T3 하네스 4종 verify 보강**: codex·hermes·openclaw·opencode windows verify에 "로그인 살아있는지" 2번째 스텝을 **powershell Select-String + `exit 1` 가드**로 추가(findstr 공백+따옴표 이스케이프 위험 회피). 테스트 확장(auth_verify win 순회 + windows_verify_gates_have_exit_guard 신설)
-- **T4 코드서명 스캐폴드**: release.yml에 조건부 서명 주입 스텝(시크릿 `WINDOWS_SIGN_COMMAND` 있을 때만 jq로 signCommand 주입). tauri.conf 무변경 → **회귀 0**
-- 검증: cargo test --all-features(lib 75+통합 16+scan_secrets 6) · fmt · clippy · front test+build 전부 통과. JSON/YAML 유효성 확인
+### 푸터 사업자정보 (사업자등록증 기준 실값 반영 완료)
+상호 니즈랩(NeedsLab) · 대표 권용범 · 사업자등록번호 825-16-02771 · 주소 경기도 광명시 소하로 190, B동 12층 1217호 · 문의 hello@needslab.ai. (통신판매업신고번호 없음 — 무료앱)
 
-## 실측 결과 (windows-smoke run 28930310158, 2026-07-08)
-- **lazycodex 확정**: omo가 `%USERPROFILE%\.local\bin\omo.cmd`로 설치되고 `.local\bin`은 PATH 미등록 → 임시안 `omo --version`도 실패. detect/verify를 절대경로 `path_check {{home}}/.local/bin/omo.cmd`로 확정(브랜치 fix/lazycodex-omo-cmd-path, 로컬 테스트 GREEN)
-- **verify 보강 검증**: openclaw/opencode 완전 통과(npm 전역 `C:\npm\prefix`가 PATH). codex/hermes/claude-code는 `.local\bin`이 CI 세션 PATH 미반영이라 probe에선 미해결이나 powershell은 구문에러 없이 exit 1(커맨드 구조 정상)
-- **잔여 확인 필요(별도)**: claude-code·codex의 `.local\bin`이 레지스트리 PATH에 등록되는지 + 앱 process.rs PATH 새로고침이 실행 시 잡는지 — probe로는 확정 불가(앱 실기 확인 필요). 이 트랙 이전부터 있던 PATH 의존
-- 리포트 원본: 이 세션 scratchpad `probe/*.md`(9종). 재현: gh로 windows-smoke.yml dispatch
+### 약관 2종 (초안 — 배포 전 처리 필요)
+- terms/privacy 초안 작성됨. 이지 하네스 특성 반영(무료앱, 제3자 도구 설치 도우미, 면책 / 앱은 회사서버 미수집·로컬저장).
+- **배포 전**: ① 시행일 `2026년 00월 00일` 실제 배포일로 채우기 ② 노란 "초안" 안내박스 제거 ③ 가능하면 법률 검토
 
-## 다음 스텝 (M6 윈도우 트랙 핵심 완료 — 아래는 잔여/선택)
-- (선택) 위 "잔여 확인 필요"의 `.local\bin` PATH를 윈도우 실기(tauri dev)에서 확인 — 필요 시 harness(codex·claude-code) detect/verify도 lazycodex처럼 절대경로화
-- 레시피 변경 전달 = 원격 번들(`scripts/build_recipes_bundle.sh` → easy-harness-recipes)로 v0.1.2 사용자에 선반영 가능하나, 방침상 기본은 v0.1.3 일괄
-- v0.1.3 릴리스(보류 해제 시): tauri.conf.json version→0.1.3 → 태그 push → draft → 발행(절차·함정은 CLAUDE.md "릴리스 절차 (M5)"). 이때 공식 아이콘 + 윈도우 트랙 개선이 사용자에게 나감
+### 리모션 데모영상 (진행 중)
+- `remotion-demo/` 폴더 = Remotion 4.0.486 blank 프로젝트(bun install 완료). 이미지는 `remotion-demo/public/`(web/public에서 복사).
+- 구성 24초(720f/30fps) 4씬: `src/scenes/` Intro(오공이 등장+타이틀)·PickTool(카탈로그 카드 클릭)·Installing(오공이 날며 설치 진행바)·Done(준비 완료). 골드톤, Composition.tsx에서 Sequence로 조립(살짝 오버랩=크로스페이드). id=`EasyHarnessDemo`.
+- 렌더: `npx remotion render EasyHarnessDemo out/demo.mp4` → 결과 확인·조정 중. 폰트는 index.css에 Pretendard CDN @import(안 되면 시스템 한글 폴백).
+- 완성되면: easyharness 배포에 새 영상 넣고 랜딩 데모 섹션을 video로 교체.
 
-## 주의/결정
-- 인증(로그인) 필요한 verify는 헤드리스 CI가 검증 못함 → 인증 문자열은 mac 실측값 재사용. CI는 설치 경로·셸 배관까지만
-- 미니엔진(pwsh)은 앱 러너(Rust Command)와 인자 인용이 근사 — 100% 동일 실행 필요 시 후속으로 헤드리스 dev-tools bin(백로그)
-- **코드서명 인증서 조달은 범위 밖**(사용자 결정 대기). 스캐폴드만 깔림. "값만 꽂으면 되는" 체크리스트는 계획 문서 하단
-- pwsh는 맥에 없어 probe 스크립트 런타임 검증은 windows-smoke 실행 때 처음 이뤄짐
+### 남은 순서
+③ 리모션 렌더 확인·조정(현재) → ④ 시안을 실제 `web/` React 컴포넌트로 이식(약관 `/terms`·`/privacy` 라우트 + 푸터 사업자정보 포함) → `vercel deploy --prod --cwd web`로 배포. (랜딩 배포는 git 연동 아님)
+
+---
+
+## 백로그 (별개, 보류 중)
+- **앱 v0.1.3 릴리스 보류**("다 정리하고 한 번에" 방침. 배포된 앱은 v0.1.2). 절차·함정은 CLAUDE.md "릴리스 절차 (M5)".
+- **M6 윈도우 트랙 완료**: PR #2·#3·#4 main 머지(실측 CI·lazycodex omo.cmd 절대경로·verify 보강·서명 스캐폴드·카탈로그 카드 리디자인). 잔여(선택): codex·claude-code `.local\bin` PATH 윈도우 실기 확인.
+- **카탈로그 "실제 설치 감지" 보류**(2026-07-08 Agent Teams 검토 후): 삭제 안전장치(Dashboard.tsx 경고가 catalog.installed 의존) 훼손·이름충돌 오탐(hermes)·타임아웃 전무가 리스크. 재착수 시 "스캔 버튼식+하드 타임아웃(fail-open)+installed.json 불변+stdout 검증".
 
 ## 인프라 (재사용)
 - 레포 3종(needslab-ai): easy-harness(private 소스) · easy-harness-releases(public 배포) · easy-harness-recipes(public 번들)
-- 릴리스 절차·함정은 CLAUDE.md "릴리스 절차 (M5)". GitHub 시크릿 9종 등록. Apple: Team RB6FTGW2DK, 로컬 키 ~/.tauri/
-- 랜딩 배포는 git 연동 아님 — 사이트 수정 시 `vercel deploy --prod --cwd web`
+- 랜딩 배포: `vercel deploy --prod --cwd web` (프로젝트명 easyharness, 공개 별칭 easyharness.vercel.app)
+- Apple: Team RB6FTGW2DK, 로컬 키 ~/.tauri/. GitHub 시크릿 9종 등록.
