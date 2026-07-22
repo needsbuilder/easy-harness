@@ -1,7 +1,12 @@
 import { type Picks } from "../lib/releases";
+import { GITHUB_REPO } from "../lib/links";
+import { formatStars, useGithubStars } from "../lib/useGithubStars";
 import { DownloadButton } from "./DownloadButton";
+import { GithubIcon, StarIcon } from "./icons";
 
 export function Hero({ picks, failed }: { picks: Picks; failed: boolean }) {
+  const stars = useGithubStars();
+
   return (
     <section className="relative">
       {/* 골드 방사형 배경 */}
@@ -44,6 +49,28 @@ export function Hero({ picks, failed }: { picks: Picks; failed: boolean }) {
           <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
             <DownloadButton picks={picks} failed={failed} />
           </div>
+          {/* 다운로드가 주 CTA 라서 스타 유도는 한 줄 링크로 가볍게 둔다 */}
+          <a
+            href={GITHUB_REPO}
+            target="_blank"
+            rel="noopener"
+            className="group mt-5 inline-flex items-center gap-[9px] text-[0.9rem] text-txt-tertiary transition hover:text-txt-primary"
+          >
+            <GithubIcon className="h-[15px] w-[15px]" />
+            <span className="break-keep">
+              오픈소스예요. 마음에 들면{" "}
+              <span className="font-bold text-txt-gold underline decoration-[rgba(216,172,59,0.5)] underline-offset-[3px] transition group-hover:decoration-brand">
+                GitHub에 별 하나
+              </span>{" "}
+              눌러주세요
+            </span>
+            {stars !== null && (
+              <span className="inline-flex items-center gap-[3px] rounded-full bg-surface-gold-tint px-[9px] py-[2px] font-mono text-[0.78rem] font-semibold text-txt-gold">
+                <StarIcon className="h-[11px] w-[11px]" />
+                {formatStars(stars)}
+              </span>
+            )}
+          </a>
         </div>
         <div className="relative order-first flex min-h-[300px] items-center justify-center md:order-last md:min-h-[380px]">
           <span
