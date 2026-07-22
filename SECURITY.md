@@ -5,7 +5,7 @@
 **공개 이슈로 올리지 말아주세요.** 아래로 알려주시면 됩니다.
 
 - 메일: **hello@needslab.ai** (제목에 `[보안]`을 붙여주시면 빨리 봅니다)
-- 또는 GitHub의 [Security Advisory](https://github.com/needslab-ai/easy-harness/security/advisories/new) 기능
+- 또는 GitHub의 [Security Advisory](https://github.com/needsbuilder/easy-harness/security/advisories/new) 기능
 
 알려주실 때 아래가 있으면 확인이 빨라집니다.
 
