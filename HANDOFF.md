@@ -4,12 +4,15 @@
 
 **https://github.com/needslab-ai/easy-harness 가 public 이다.** push + `gh repo edit --visibility public` 완료, 익명 접근·라이선스 인식(Apache-2.0)·README 이미지 렌더링까지 검증함. 토픽 12종·홈페이지(easyharness.needslab.ai)·설명 설정 완료.
 
-### 공개 직후 남은 것 (커뮤니티 프로필 62%)
-- **이슈 템플릿 없음**: "새 도구 추가 요청" 템플릿을 만들면 기여 유도 + 리뷰 노동 절감에 직결(제안만 한 상태)
-- **PR 템플릿 없음**: CONTRIBUTING이 요구하는 3가지(도구 설명·확인한 OS·인증 방식)를 템플릿으로
-- **Code of Conduct 없음**: CONTRIBUTING 말미의 "서로에 대한 예의"로 대신하고 있으나 GitHub은 인식 못 함
-- Discussions 비활성(관리 부담 때문에 보류, 필요하면 켜기)
-- **소셜 프리뷰 이미지 미설정**: gh CLI로 불가, 웹 Settings에서 `web/public/og.png` 업로드해야 링크 공유 썸네일이 뜬다
+### 공개 직후 추가 완료 (커밋 c8f6d3c·968a9e7)
+- **이슈 템플릿 2종**(`.github/ISSUE_TEMPLATE/`): `new-tool.yml`(도구 정보·설치 명령·로그인 방식을 구조화해 받아 되묻는 왕복 제거) · `bug.yml`(비개발자용 문구). `config.yml`은 보안 신고를 Security Advisory로 유도.
+- **PR 템플릿**: 확인한 OS·테스트 추가 여부·5개 검사 체크박스.
+- **랜딩 스타 유도**: `GITHUB_REPO`를 릴리스 레포 → **소스 레포**로 교체(스타는 소스에 쌓여야 함). Nav에 스타 개수, `OpenSource.tsx` 섹션 신규(별 주기 + 내 도구 추가하기). `useGithubStars`는 **0개면 숨긴다**(별 0은 사회적 증거 부재를 광고하는 역효과). API 미인증 60회/시간 제한에 걸려도 버튼은 그대로 보이게 실패를 삼킨다.
+- 검증: 실브라우저로 데스크톱·모바일 렌더링, 가로스크롤 없음, 콘솔 에러 없음 확인.
+
+### 아직 남은 것
+- **소셜 프리뷰 이미지 미설정**: gh CLI로 불가. 웹 Settings 맨 위에서 `web/public/og.png`를 업로드해야 레포 링크 공유 시 썸네일이 뜬다.
+- Code of Conduct 없음(CONTRIBUTING 말미 "서로에 대한 예의"로 대신 중, GitHub은 인식 못 함) · Discussions 비활성(관리 부담)
 
 ### 결정 (2026-07-22)
 - **직접 수익화 안 함**. 무료·오픈소스로 인지도를 쌓아 **책·강의·해커톤**으로 수익화하는 방향(사용자 판단). 유료 기능 계획 없음 → 라이선스 분리 구조 불필요.
