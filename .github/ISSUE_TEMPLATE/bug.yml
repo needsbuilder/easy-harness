@@ -1,0 +1,68 @@
+name: 잘 안 돼요 (버그 제보)
+description: 설치가 실패하거나 앱이 이상하게 동작할 때
+title: "[버그] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        불편을 겪으셨다니 죄송합니다. 아래를 알려주시면 원인을 찾는 데 큰 도움이 됩니다.
+
+        **아직 잘 모르시겠어도 괜찮습니다.** 아는 만큼만 적어주세요.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 무슨 일이 생겼나요
+      description: 어떤 버튼을 눌렀고 화면에 뭐라고 나왔는지 적어주세요.
+      placeholder: |
+        예) Claude Code 설치를 눌렀는데 "준비물 설치" 단계에서 멈추고
+            빨간 글씨로 뭐라고 떴어요
+    validations:
+      required: true
+
+  - type: input
+    id: tool
+    attributes:
+      label: 어떤 도구를 설치하던 중이었나요
+      placeholder: 예) Claude Code
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 어떤 컴퓨터를 쓰시나요
+      options:
+        - 맥 (애플 실리콘, M1·M2·M3·M4)
+        - 맥 (인텔)
+        - 윈도우
+        - 잘 모르겠어요
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 앱 버전
+      description: 앱 화면 아래쪽이나 설정에서 볼 수 있어요. 모르시면 비워두셔도 됩니다.
+      placeholder: 예) v0.1.2
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 화면 사진
+      description: 이 칸에 이미지를 끌어다 놓으면 올라갑니다. 에러 메시지가 보이면 특히 좋습니다.
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 자세한 과정 (있으면)
+      description: 설치 화면의 "자세한 과정 보기"를 눌러 나온 내용을 붙여넣어 주세요.
+      render: shell
+    validations:
+      required: false
