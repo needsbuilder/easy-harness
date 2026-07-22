@@ -7,7 +7,11 @@ const AppUpdateContext = createContext<AppUpdateValue | null>(null);
 
 // Provider가 없을 때의 안전한 기본값(업데이트 없음). 배너가 앱 셸에 항상 있으므로,
 // 혹시 Provider 밖에서 렌더돼도 앱을 크래시시키지 않고 배너만 조용히 감춘다.
-const IDLE_UPDATE: AppUpdateValue = { phase: { kind: "idle" }, install: async () => {} };
+const IDLE_UPDATE: AppUpdateValue = {
+  phase: { kind: "idle" },
+  install: async () => {},
+  checkNow: async () => "uptodate",
+};
 
 /**
  * 앱이 켜질 때 1회 업데이트를 확인하고 그 상태를 트리 전체에서 공유한다.
