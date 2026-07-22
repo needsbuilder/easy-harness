@@ -33,6 +33,16 @@ describe("useGithubStars", () => {
     await waitFor(() => expect(result.current).toBe(42));
   });
 
+  it("0개면 숨긴다 (별 0 은 오히려 역효과)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({ stargazers_count: 0 }) })),
+    );
+    const { result } = renderHook(() => useGithubStars());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(result.current).toBeNull();
+  });
+
   it("API 가 막히면 null 로 남아 화면이 깨지지 않는다", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403 })));
     const { result } = renderHook(() => useGithubStars());

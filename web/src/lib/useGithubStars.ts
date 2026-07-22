@@ -15,6 +15,8 @@ export function formatStars(n: number): string {
  * 그때도 GitHub 버튼 자체는 그대로 보여야 하므로 실패를 조용히 삼킨다.
  */
 export function useGithubStars() {
+  // 0개일 때도 null 로 둔다. "별 0"은 사회적 증거가 없다고 광고하는 셈이라
+  // 아예 안 보여주는 편이 낫다.
   const [stars, setStars] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,7 +28,9 @@ export function useGithubStars() {
       })
       .then((data: { stargazers_count?: number }) => {
         if (cancelled) return;
-        if (typeof data.stargazers_count === "number") setStars(data.stargazers_count);
+        if (typeof data.stargazers_count === "number" && data.stargazers_count > 0) {
+          setStars(data.stargazers_count);
+        }
       })
       .catch(() => {
         /* 별 개수는 없어도 그만이다 */
