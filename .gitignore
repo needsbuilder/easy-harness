@@ -2,6 +2,9 @@
 .gstack/
 _workspace/
 
+# 홍보용 이미지 원본 (레포에 올리지 않는다)
+스레드용_*.png
+
 # Logs
 logs
 *.log
