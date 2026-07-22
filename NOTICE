@@ -1,0 +1,31 @@
+이지 하네스 (Easy Harness)
+Copyright 2026 NeedsLab (니즈랩)
+
+This product includes software developed at NeedsLab (https://needslab.ai).
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+상표에 대하여 (Trademarks)
+
+"이지 하네스", "Easy Harness", 니즈랩(NeedsLab) 이름과 로고, 그리고 마스코트를
+비롯한 브랜드 자산은 Apache License 2.0 제6조에 따라 라이선스에 포함되지 않습니다.
+
+코드는 자유롭게 쓰시고 고치시고 배포하셔도 됩니다.
+다만 포크한 결과물을 배포하실 때는 다른 이름을 붙여주세요.
+사용자가 어느 쪽이 공식 배포판인지 헷갈리지 않게 하기 위한 것입니다.
+
+The names "이지 하네스" / "Easy Harness", the NeedsLab name and logo, and the
+mascot artwork are not licensed under the Apache License 2.0 (see Section 6).
+You are free to use, modify, and redistribute the code, but please use a
+different name for redistributed builds.
+
+---
+
+이 앱이 설치를 도와주는 도구들(Claude Code, Codex 등)은 각각의 저작권자와
+라이선스를 따르며, 이 저장소의 라이선스와는 무관합니다.

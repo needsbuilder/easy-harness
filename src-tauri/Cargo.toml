@@ -5,6 +5,8 @@ version = "0.1.0"
 default-run = "easy-harness"
 description = "비개발자를 위한 AI 코딩 도구 설치 도우미, 이지 하네스"
 authors = ["needslab <hello@needslab.ai>"]
+license = "Apache-2.0"
+repository = "https://github.com/needslab-ai/easy-harness"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
