@@ -32,19 +32,19 @@ cargo clippy -- -D warnings  # CI가 검사 (경고 = 실패)
 
 ## 릴리스 절차 (M5, GitHub Actions)
 
-버전을 올려 태그를 밀면 파이프라인(`.github/workflows/release.yml`)이 빌드·서명·공증·시크릿 스캔 후 `needslab-ai/easy-harness-releases`(public)에 draft 릴리스를 만든다. **발행(Publish)이 곧 실배포 스위치**다(GitHub `releases/latest`가 draft를 건너뛰므로 발행 전까지 자동 업데이트에 안 걸린다).
+버전을 올려 태그를 밀면 파이프라인(`.github/workflows/release.yml`)이 빌드·서명·공증·시크릿 스캔 후 **이 레포**(`needsbuilder/easy-harness`)에 draft 릴리스를 만든다. **발행(Publish)이 곧 실배포 스위치**다(GitHub `releases/latest`가 draft를 건너뛰므로 발행 전까지 자동 업데이트에 안 걸린다).
 
 1. `src-tauri/tauri.conf.json`의 `version`을 올리고 main에 커밋
 2. `git tag v<버전> && git push origin v<버전>` → 파이프라인이 draft 생성
-3. Actions 통과 확인 후 draft 자산(.dmg 2·app.tar.gz+sig·setup.exe·msi·latest.json) 점검 → `gh release edit v<버전> --repo needslab-ai/easy-harness-releases --draft=false`로 발행
+3. Actions 통과 확인 후 draft 자산(.dmg 2·app.tar.gz+sig·setup.exe·msi·latest.json) 점검 → `gh release edit v<버전> --draft=false`로 발행
 4. **시크릿 스캔이 실패한 draft는 절대 발행하지 말고** `gh release delete`로 삭제(스캔은 발행 게이트 앞 안전망)
 5. 로컬 `bun run tauri build`에는 `TAURI_SIGNING_PRIVATE_KEY`(+`_PASSWORD`) 환경변수 필요(`createUpdaterArtifacts` 때문). 키는 `~/.tauri/easy-harness-updater.key`
 
 주의(첫 릴리스에서 실제로 겪은 함정):
 - 맥 서명용 `APPLE_CERTIFICATE`는 **Developer ID Application 인증서만** 담은 .p12여야 한다. 키체인에 Apple Development 인증서가 함께 있으면 `security export`가 둘을 묶어 내보내 "certificate does not match identity"로 실패한다 → openssl로 Developer ID만 분리해 .p12 재생성.
-- `easy-harness-releases`가 완전 빈 레포면 tauri-action이 `target_commitish` 오류를 낸다 → 레포에 커밋 하나(README 등) + release.yml에 `releaseCommitish: main`.
 - 공증은 Apple Developer 약관이 갱신되면 계정 소유자가 developer.apple.com에서 새로 **동의**해야 열린다(미동의 시 notarize 403 "required agreement is missing").
-- 레시피 번들 갱신은 `scripts/build_recipes_bundle.sh <버전> <개인키>` 후 `easy-harness-recipes`에 게시.
+- 레시피 번들 갱신은 `scripts/build_recipes_bundle.sh <버전> <개인키>`. 스크립트가 `recipes-bundle/`까지 복사하므로 **커밋·푸시하면 배포 끝**이다(앱의 `REMOTE_BASE`가 이 경로의 raw URL을 본다).
+- 2026-07-22에 레포 3개를 이 레포 하나로 합쳤다(소스가 private이던 시절의 구조였다). 옛 `easy-harness-releases`·`easy-harness-recipes`는 v0.1.2 이하 앱이 아직 그 주소를 보므로 **삭제하지 말고 아카이브 상태로 둔다**(아카이브해도 raw·다운로드는 계속 200).
 
 ## 아키텍처
 
