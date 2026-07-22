@@ -26,16 +26,17 @@ export function Nav() {
           rel="noopener"
           aria-label={
             stars === null
-              ? "GitHub 저장소 열기"
-              : `GitHub 저장소 열기, 별 ${stars}개를 받았어요`
+              ? "GitHub 저장소에서 별 주기"
+              : `GitHub 저장소에서 별 주기, 지금 ${stars}개`
           }
-          className="group inline-flex items-center gap-[7px] rounded-full border-[1.5px] border-line px-[15px] py-2 text-[0.88rem] font-bold text-txt-secondary transition hover:border-brand hover:bg-surface-gold-tint hover:text-txt-primary"
+          className="group inline-flex items-center gap-2 rounded-full border-[1.5px] border-line-gold bg-surface-gold-tint px-[17px] py-[9px] text-[0.92rem] font-bold text-txt-gold transition hover:border-brand hover:bg-brand hover:text-white"
         >
-          <GithubIcon />
-          GitHub
+          <GithubIcon className="h-[18px] w-[18px]" />
+          <span className="hidden sm:inline">GitHub 별 주기</span>
+          <span className="sm:hidden">별 주기</span>
+          <StarIcon className="h-[14px] w-[14px] transition group-hover:scale-110" />
           {stars !== null && (
-            <span className="ml-[3px] inline-flex items-center gap-[3px] border-l border-line pl-[9px] font-mono text-[0.8rem] text-txt-gold transition group-hover:text-txt-primary">
-              <StarIcon className="h-[13px] w-[13px]" />
+            <span className="rounded-full bg-white/70 px-[8px] py-[1px] font-mono text-[0.8rem] transition group-hover:bg-white/25">
               {formatStars(stars)}
             </span>
           )}
