@@ -74,7 +74,9 @@ jobs:
       - name: Tauri 빌드·서명·공증·draft 릴리스
         uses: tauri-apps/tauri-action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASES_PAT }}
+          # 릴리스를 이 레포에 직접 만들므로 기본 토큰이면 충분하다.
+          # (예전엔 별도 릴리스 레포에 쓰느라 RELEASES_PAT 이 필요했다)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
@@ -84,14 +86,12 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          owner: needslab-ai
-          repo: easy-harness-releases
+          # owner/repo 를 비우면 이 레포에 릴리스가 만들어진다.
+          # 소스가 public 이 되면서 배포용 레포를 따로 둘 이유가 사라져 합쳤다(2026-07-22).
           tagName: v__VERSION__
           releaseName: "이지 하네스 v__VERSION__"
           releaseBody: "새 버전이 나왔어요. 아래 파일로 설치할 수 있어요."
           releaseDraft: true
-          # 릴리스 레포는 코드 히스토리가 달라 현재 커밋 SHA를 못 쓴다 - 릴리스 레포의 main 기준
-          releaseCommitish: main
           args: ${{ matrix.args }}
       - name: 시크릿 스캔 (산출물, 발행 게이트 앞 안전망)
         shell: bash

@@ -5,8 +5,11 @@ use crate::error::EngineError;
 use crate::recipe::loader::Catalog;
 use crate::recipe::signing::{verify_bundle, RECIPE_PUBKEY_B64};
 
+/// 서명된 레시피 번들을 받아올 곳. 소스 레포가 public 이 된 뒤로 별도 레포가 필요 없어져
+/// 이 레포의 `recipes-bundle/` 로 합쳤다(2026-07-22). 옛 주소를 보는 v0.1.2 이하 앱을 위해
+/// `needslab-ai/easy-harness-recipes` 레포는 지우지 않고 아카이브로 남겨 둔다.
 pub const REMOTE_BASE: &str =
-    "https://raw.githubusercontent.com/needslab-ai/easy-harness-recipes/main";
+    "https://raw.githubusercontent.com/needsbuilder/easy-harness/main/recipes-bundle";
 
 /// 캐시된 원격 번들을 검증해 로딩. 서명·파싱 실패 또는 버전이 낮으면 None.
 pub fn load_cached(cache_dir: &Path, min_version: u64) -> Option<Catalog> {

@@ -1,0 +1,2412 @@
+{
+  "bundleVersion": 1,
+  "recipes": [
+    {
+      "schemaVersion": 1,
+      "id": "bun",
+      "name": "Bun",
+      "kind": "prerequisite",
+      "easyDescription": "가재코드가 움직이는 데 필요한 기본 부품이에요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "supportedModels": [],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Bun이 이미 있는지 볼게요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "--version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Bun 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://bun.sh/install",
+              "file_name": "bun-install.sh",
+              "command": "/bin/bash",
+              "args": [
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "Bun이 잘 설치됐는지 확인하고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "--version"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Bun에게 첫 인사를 시켜 볼게요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "--version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Bun을 새 버전으로 바꾸고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "upgrade"
+              ]
+            }
+          ],
+          "uninstall": [],
+          "rollback": []
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Bun이 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Bun 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://bun.sh/install.ps1",
+              "file_name": "bun-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "Bun이 잘 설치됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Bun에게 첫 인사를 시켜 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Bun을 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" upgrade"
+              ]
+            }
+          ],
+          "uninstall": [],
+          "rollback": []
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "claude-code",
+      "name": "Claude Code",
+      "kind": "harness",
+      "easyDescription": "말로 시키면 코딩을 대신해 주는 Anthropic 공식 AI 비서예요",
+      "pricing": {
+        "label": "구독 필요",
+        "kind": "paid"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "Claude (Opus, Sonnet, Haiku)",
+          "accountLabel": "Claude Pro 이상 구독 또는 API 키"
+        }
+      ],
+      "recommended": true,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Claude Code가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Claude Code 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://claude.ai/install.sh",
+              "file_name": "claude-install.sh",
+              "command": "/bin/bash",
+              "args": [
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "Claude 계정을 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "claude"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
+              "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
+              "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "run_command",
+              "friendly": "Claude에게 첫 인사를 시켜 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude -p '안녕이라고 한 단어로만 답해줘'"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Claude Code를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude update"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Claude Code를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f ~/.local/bin/claude && rm -rf ~/.local/share/claude"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f ~/.local/bin/claude"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Claude Code가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Claude Code 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://claude.ai/install.ps1",
+              "file_name": "claude-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "Claude 계정을 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "claude"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
+              "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
+              "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "run_command",
+              "friendly": "Claude에게 첫 인사를 시켜 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude -p \"안녕이라고 한 단어로만 답해줘\""
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Claude Code를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude update"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Claude Code를 깨끗하게 지우고 있어요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "Remove-Item -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; Remove-Item -Recurse -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\share\\claude\""
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "Remove-Item -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\bin\\claude.exe\""
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "codex",
+      "name": "Codex",
+      "kind": "harness",
+      "easyDescription": "ChatGPT 계정으로 바로 쓰는 OpenAI의 AI 코딩 비서예요",
+      "pricing": {
+        "label": "무료로 시작",
+        "kind": "freemium"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "GPT-5.5, GPT-5.4",
+          "accountLabel": "ChatGPT 계정(무료 플랜 가능)"
+        }
+      ],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Codex가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "codex --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Codex 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://chatgpt.com/codex/install.sh",
+              "file_name": "codex-install.sh",
+              "command": "/bin/sh",
+              "args": [
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "codex --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "browser_login",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "ChatGPT 계정을 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "codex login"
+                ]
+              }
+            ],
+            "guide": [
+              "잠시 뒤 인터넷 창이 자동으로 열려요",
+              "쓰던 ChatGPT 계정으로 로그인하고 허용을 눌러 주세요",
+              "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Codex가 잘 응답하는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "codex login status"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "download_run",
+              "friendly": "Codex를 새 버전으로 바꾸고 있어요",
+              "url": "https://chatgpt.com/codex/install.sh",
+              "file_name": "codex-install.sh",
+              "command": "/bin/sh",
+              "args": [
+                "{{file}}"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Codex를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f \"$(command -v codex)\""
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f \"$(command -v codex)\" || true"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Codex가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "codex --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Codex 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://chatgpt.com/codex/install.ps1",
+              "file_name": "codex-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "codex --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "browser_login",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "ChatGPT 계정을 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "codex login"
+                ]
+              }
+            ],
+            "guide": [
+              "잠시 뒤 인터넷 창이 자동으로 열려요",
+              "쓰던 ChatGPT 계정으로 로그인하고 허용을 눌러 주세요",
+              "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Codex가 잘 응답하는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "codex login status"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "download_run",
+              "friendly": "Codex를 새 버전으로 바꾸고 있어요",
+              "url": "https://chatgpt.com/codex/install.ps1",
+              "file_name": "codex-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Codex를 깨끗하게 지우고 있어요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "Remove-Item -Force -ErrorAction SilentlyContinue (Get-Command codex -ErrorAction SilentlyContinue).Source"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "Remove-Item -Force -ErrorAction SilentlyContinue (Get-Command codex -ErrorAction SilentlyContinue).Source"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "gajaecode",
+      "name": "가재코드",
+      "kind": "harness",
+      "easyDescription": "꼼꼼히 묻고 계획을 세운 뒤 코딩하는 한국산 AI 도우미예요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "Claude",
+          "accountLabel": "Claude 구독 또는 API 키"
+        },
+        {
+          "modelLabel": "GPT",
+          "accountLabel": "ChatGPT 구독 또는 API 키"
+        },
+        {
+          "modelLabel": "Gemini 외 30여 가지",
+          "accountLabel": "쓰려는 곳의 계정"
+        }
+      ],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [
+            "bun"
+          ],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "가재코드가 이미 있는지 볼게요",
+              "command": "{{home}}/.bun/bin/gjc",
+              "args": [
+                "--version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 설치하고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "install",
+                "-g",
+                "gajae-code"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "{{home}}/.bun/bin/gjc",
+              "args": [
+                "--version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "automatic",
+            "steps": [
+              {
+                "type": "run_command",
+                "friendly": "쓰던 AI 계정을 가재코드에 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "{{home}}/.bun/bin/gjc setup credentials --yes"
+                ]
+              }
+            ],
+            "guide": [
+              "이 컴퓨터에서 이미 로그인된 AI 계정(Claude 등)을 찾아서 가재코드에 그대로 연결해요",
+              "새로 로그인하거나 입력할 건 하나도 없어요",
+              "연결이 끝나면 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "가재코드 부품이 잘 도는지 확인하고 있어요",
+              "command": "{{home}}/.bun/bin/gjc",
+              "args": [
+                "--smoke-test"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 새 버전으로 바꾸고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "install",
+                "-g",
+                "gajae-code"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 깨끗하게 지우고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "remove",
+                "-g",
+                "gajae-code"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "{{home}}/.bun/bin/bun",
+              "args": [
+                "remove",
+                "-g",
+                "gajae-code"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [
+            "bun"
+          ],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "가재코드가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\gjc\" --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 설치하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" install -g gajae-code"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\gjc\" --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "automatic",
+            "steps": [
+              {
+                "type": "run_command",
+                "friendly": "쓰던 AI 계정을 가재코드에 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "\"%USERPROFILE%\\.bun\\bin\\gjc\" setup credentials --yes"
+                ]
+              }
+            ],
+            "guide": [
+              "이 컴퓨터에서 이미 로그인된 AI 계정(Claude 등)을 찾아서 가재코드에 그대로 연결해요",
+              "새로 로그인하거나 입력할 건 하나도 없어요",
+              "연결이 끝나면 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "가재코드 부품이 잘 도는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\gjc\" --smoke-test"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" install -g gajae-code"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "가재코드를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" remove -g gajae-code"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "\"%USERPROFILE%\\.bun\\bin\\bun.exe\" remove -g gajae-code"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "hermes",
+      "name": "Hermes",
+      "kind": "harness",
+      "easyDescription": "모델 300여 가지를 갈아끼며 쓰는 만능 AI 도우미예요. 애플 실리콘 맥 전용이에요",
+      "pricing": {
+        "label": "무료로 시작",
+        "kind": "freemium"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "모델 300여 가지 (Claude, GPT, Gemini 포함)",
+          "accountLabel": "Nous Portal 계정(무료 시작 가능)"
+        }
+      ],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Hermes가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Hermes 공식 설치 프로그램을 실행하고 있어요. 필요한 부품도 알아서 챙겨요",
+              "url": "https://hermes-agent.nousresearch.com/install.sh",
+              "file_name": "hermes-install.sh",
+              "command": "/bin/bash",
+              "args": [
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "browser_login",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "Nous Portal 계정을 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "hermes setup --portal"
+                ]
+              }
+            ],
+            "guide": [
+              "잠시 뒤 인터넷 창이 자동으로 열려요",
+              "Nous Portal 계정으로 로그인해 주세요. 처음이면 무료로 가입할 수 있어요",
+              "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Hermes 상태를 점검하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes doctor"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Hermes를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes update --yes"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Hermes를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes uninstall --yes"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f ~/.local/bin/hermes"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Hermes가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Hermes 공식 설치 프로그램을 실행하고 있어요. 필요한 부품도 알아서 챙겨요",
+              "url": "https://hermes-agent.nousresearch.com/install.ps1",
+              "file_name": "hermes-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "browser_login",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "Nous Portal 계정을 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "hermes setup --portal"
+                ]
+              }
+            ],
+            "guide": [
+              "잠시 뒤 인터넷 창이 자동으로 열려요",
+              "Nous Portal 계정으로 로그인해 주세요. 처음이면 무료로 가입할 수 있어요",
+              "로그인이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Hermes 상태를 점검하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes doctor"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Hermes를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes update --yes"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "Hermes를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes uninstall --yes"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "hermes uninstall --yes"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "im-not-ai",
+      "name": "임낫에이아이",
+      "kind": "plugin",
+      "easyDescription": "AI가 쓴 한글 특유의 티를 지워서 사람이 쓴 글처럼 다듬어 줘요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "recommended": false,
+      "requires": [
+        "claude-code"
+      ],
+      "source": {
+        "label": "만든 곳: epoko77-ai",
+        "url": "https://github.com/epoko77-ai/im-not-ai"
+      },
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'humanize-korean@im-not-ai'"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "플러그인 가게를 등록하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin marketplace add https://github.com/epoko77-ai/im-not-ai.git"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 Claude Code에 설치하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin install humanize-korean@im-not-ai"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'humanize-korean@im-not-ai'"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin update humanize-korean"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall humanize-korean"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall humanize-korean || true"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin list --json | findstr humanize-korean@im-not-ai"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "플러그인 가게를 등록하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin marketplace add https://github.com/epoko77-ai/im-not-ai.git"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 Claude Code에 설치하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin install humanize-korean@im-not-ai"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin list --json | findstr humanize-korean@im-not-ai"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin update humanize-korean"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "임낫에이아이를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin uninstall humanize-korean"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin uninstall humanize-korean"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "insane-search",
+      "name": "인세인서치",
+      "kind": "plugin",
+      "easyDescription": "웹페이지가 안 열릴 때 다른 길을 찾아 끝까지 읽어다 주는 검색 보조예요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "recommended": false,
+      "requires": [
+        "claude-code"
+      ],
+      "source": {
+        "label": "만든 곳: fivetaku",
+        "url": "https://github.com/fivetaku/insane-search"
+      },
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'insane-search@gptaku-plugins'"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "플러그인 가게를 등록하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "인세인서치를 Claude Code에 설치하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin install insane-search@gptaku-plugins"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'insane-search@gptaku-plugins'"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "인세인서치를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin update insane-search"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "인세인서치를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall insane-search"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall insane-search || true"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "k-skill",
+      "name": "K-스킬",
+      "kind": "plugin",
+      "easyDescription": "로또, 날씨, 법령, 부동산 같은 한국 생활 정보 백여 가지를 AI 도구에 더해 줘요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "recommended": false,
+      "requires": [
+        "claude-code"
+      ],
+      "source": {
+        "label": "만든 곳: NomaDamas",
+        "url": "https://github.com/NomaDamas/k-skill"
+      },
+      "platforms": {
+        "mac": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "path_check",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "path": "{{home}}/.claude/skills/k-skill-setup"
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "한국 생활 스킬 모음을 설치하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes skills add NomaDamas/k-skill --all -g -y -a claude-code"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "path_check",
+              "friendly": "스킬이 제자리에 들어갔는지 확인하고 있어요",
+              "path": "{{home}}/.claude/skills/k-skill-setup"
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "스킬 모음을 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes skills add NomaDamas/k-skill --all -g -y -a claude-code"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "스킬 모음을 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes skills remove biz-health-check bunjang-search catchtable-sniper cheap-gas-nearby corporate-registration-consulting coupang-product-search court-auction-notice-search daangn-cars-search daangn-jobs-search daangn-realty-search daangn-used-goods-search daishin-report-search daiso-product-search danawa-price-search delivery-tracking donation-place-search emergency-room-beds express-bus-booking fine-dust-location flight-ticket-search foresttrip-vacancy fsc-corporate-info g2b-order-plan-search g2b-sanctioned-supplier gangnamunni-clinic-search geeknews-search gongsijiga-search han-river-water-level hipass-receipt hola-poke-yeoksam household-waste-info hwp intercity-bus-booking iros-registry-automation job-posting-match jobkorea-talent-search joseon-sillok-search k-dart k-schoollunch-menu k-skill-cleaner k-skill-setup kakao-bar-nearby kakao-map kakaotalk-mac kbl-results kbo-results kleague-results korea-weather korean-character-count korean-cinema-search korean-humanizer korean-jangbu-for korean-law-search korean-marathon-schedule korean-middle-korean korean-patent-search korean-privacy-terms korean-scholarship-search korean-slang-writing korean-spell-check korean-stock-search korean-transit-route kosis-stats kstartup-search ktx-booking lck-analytics lh-notice-search library-book-search local-election-candidate-search localdata-business-status lotto-results lovebug-report market-kurly-search mfds-drug-safety mfds-food-safety myrealtrip-search naming-house national-pension-workplace naver-blog-research naver-news-search naver-shopping-search nts-business-registration nts-tax-delinquency ohou-today-deal olive-young-search parking-lot-search public-restroom-nearby real-estate-search rhwp-advanced rhwp-edit saju-fortune saramin-talent-search seoul-bike seoul-density seoul-subway-arrival sh-notice-search srt-booking subway-lost-property ticket-availability toss-securities used-car-price-search zipcode-search -g -y"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes skills remove biz-health-check bunjang-search catchtable-sniper cheap-gas-nearby corporate-registration-consulting coupang-product-search court-auction-notice-search daangn-cars-search daangn-jobs-search daangn-realty-search daangn-used-goods-search daishin-report-search daiso-product-search danawa-price-search delivery-tracking donation-place-search emergency-room-beds express-bus-booking fine-dust-location flight-ticket-search foresttrip-vacancy fsc-corporate-info g2b-order-plan-search g2b-sanctioned-supplier gangnamunni-clinic-search geeknews-search gongsijiga-search han-river-water-level hipass-receipt hola-poke-yeoksam household-waste-info hwp intercity-bus-booking iros-registry-automation job-posting-match jobkorea-talent-search joseon-sillok-search k-dart k-schoollunch-menu k-skill-cleaner k-skill-setup kakao-bar-nearby kakao-map kakaotalk-mac kbl-results kbo-results kleague-results korea-weather korean-character-count korean-cinema-search korean-humanizer korean-jangbu-for korean-law-search korean-marathon-schedule korean-middle-korean korean-patent-search korean-privacy-terms korean-scholarship-search korean-slang-writing korean-spell-check korean-stock-search korean-transit-route kosis-stats kstartup-search ktx-booking lck-analytics lh-notice-search library-book-search local-election-candidate-search localdata-business-status lotto-results lovebug-report market-kurly-search mfds-drug-safety mfds-food-safety myrealtrip-search naming-house national-pension-workplace naver-blog-research naver-news-search naver-shopping-search nts-business-registration nts-tax-delinquency ohou-today-deal olive-young-search parking-lot-search public-restroom-nearby real-estate-search rhwp-advanced rhwp-edit saju-fortune saramin-talent-search seoul-bike seoul-density seoul-subway-arrival sh-notice-search srt-booking subway-lost-property ticket-availability toss-securities used-car-price-search zipcode-search -g -y"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "path_check",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "path": "{{home}}/.claude/skills/k-skill-setup"
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "한국 생활 스킬 모음을 설치하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes skills add NomaDamas/k-skill --all -g -y -a claude-code"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "path_check",
+              "friendly": "스킬이 제자리에 들어갔는지 확인하고 있어요",
+              "path": "{{home}}/.claude/skills/k-skill-setup"
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "스킬 모음을 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes skills add NomaDamas/k-skill --all -g -y -a claude-code"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "스킬 모음을 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes skills remove biz-health-check bunjang-search catchtable-sniper cheap-gas-nearby corporate-registration-consulting coupang-product-search court-auction-notice-search daangn-cars-search daangn-jobs-search daangn-realty-search daangn-used-goods-search daishin-report-search daiso-product-search danawa-price-search delivery-tracking donation-place-search emergency-room-beds express-bus-booking fine-dust-location flight-ticket-search foresttrip-vacancy fsc-corporate-info g2b-order-plan-search g2b-sanctioned-supplier gangnamunni-clinic-search geeknews-search gongsijiga-search han-river-water-level hipass-receipt hola-poke-yeoksam household-waste-info hwp intercity-bus-booking iros-registry-automation job-posting-match jobkorea-talent-search joseon-sillok-search k-dart k-schoollunch-menu k-skill-cleaner k-skill-setup kakao-bar-nearby kakao-map kakaotalk-mac kbl-results kbo-results kleague-results korea-weather korean-character-count korean-cinema-search korean-humanizer korean-jangbu-for korean-law-search korean-marathon-schedule korean-middle-korean korean-patent-search korean-privacy-terms korean-scholarship-search korean-slang-writing korean-spell-check korean-stock-search korean-transit-route kosis-stats kstartup-search ktx-booking lck-analytics lh-notice-search library-book-search local-election-candidate-search localdata-business-status lotto-results lovebug-report market-kurly-search mfds-drug-safety mfds-food-safety myrealtrip-search naming-house national-pension-workplace naver-blog-research naver-news-search naver-shopping-search nts-business-registration nts-tax-delinquency ohou-today-deal olive-young-search parking-lot-search public-restroom-nearby real-estate-search rhwp-advanced rhwp-edit saju-fortune saramin-talent-search seoul-bike seoul-density seoul-subway-arrival sh-notice-search srt-booking subway-lost-property ticket-availability toss-securities used-car-price-search zipcode-search -g -y"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes skills remove biz-health-check bunjang-search catchtable-sniper cheap-gas-nearby corporate-registration-consulting coupang-product-search court-auction-notice-search daangn-cars-search daangn-jobs-search daangn-realty-search daangn-used-goods-search daishin-report-search daiso-product-search danawa-price-search delivery-tracking donation-place-search emergency-room-beds express-bus-booking fine-dust-location flight-ticket-search foresttrip-vacancy fsc-corporate-info g2b-order-plan-search g2b-sanctioned-supplier gangnamunni-clinic-search geeknews-search gongsijiga-search han-river-water-level hipass-receipt hola-poke-yeoksam household-waste-info hwp intercity-bus-booking iros-registry-automation job-posting-match jobkorea-talent-search joseon-sillok-search k-dart k-schoollunch-menu k-skill-cleaner k-skill-setup kakao-bar-nearby kakao-map kakaotalk-mac kbl-results kbo-results kleague-results korea-weather korean-character-count korean-cinema-search korean-humanizer korean-jangbu-for korean-law-search korean-marathon-schedule korean-middle-korean korean-patent-search korean-privacy-terms korean-scholarship-search korean-slang-writing korean-spell-check korean-stock-search korean-transit-route kosis-stats kstartup-search ktx-booking lck-analytics lh-notice-search library-book-search local-election-candidate-search localdata-business-status lotto-results lovebug-report market-kurly-search mfds-drug-safety mfds-food-safety myrealtrip-search naming-house national-pension-workplace naver-blog-research naver-news-search naver-shopping-search nts-business-registration nts-tax-delinquency ohou-today-deal olive-young-search parking-lot-search public-restroom-nearby real-estate-search rhwp-advanced rhwp-edit saju-fortune saramin-talent-search seoul-bike seoul-density seoul-subway-arrival sh-notice-search srt-booking subway-lost-property ticket-availability toss-securities used-car-price-search zipcode-search -g -y"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "korean-law-mcp",
+      "name": "한국 법령 검색",
+      "kind": "plugin",
+      "easyDescription": "법제처 공식 자료로 법령과 판례를 정확하게 찾아 주는 법률 도우미예요",
+      "pricing": {
+        "label": "무료 (인증키 필요)",
+        "kind": "free"
+      },
+      "recommended": false,
+      "requires": [
+        "claude-code"
+      ],
+      "source": {
+        "label": "만든 곳: chrisryugj",
+        "url": "https://github.com/chrisryugj/korean-law-mcp"
+      },
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'korean-law@korean-law-marketplace'"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "플러그인 가게를 등록하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin marketplace add https://github.com/chrisryugj/korean-law-mcp.git"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "api_key",
+            "steps": [
+              {
+                "type": "open_url",
+                "friendly": "법제처 인증키 발급 페이지를 열어 드릴게요",
+                "url": "https://open.law.go.kr/LSO/openApi/guideList.do"
+              },
+              {
+                "type": "input_secret",
+                "friendly": "발급받은 인증키를 넣어 주세요",
+                "label": "law_oc"
+              },
+              {
+                "type": "run_command",
+                "friendly": "인증키와 함께 법령 검색기를 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "claude plugin install korean-law@korean-law-marketplace --config api_key={{secret:law_oc}}"
+                ]
+              }
+            ],
+            "guide": [
+              "버튼을 누르면 법제처 발급 페이지가 열려요. 이메일만 있으면 무료로 바로 받아요",
+              "발급받은 인증키(짧은 영문 아이디 모양)를 복사해서 아래 칸에 붙여넣어 주세요",
+              "등록이 끝나면 Claude Code 안에서 법령 검색을 바로 쓸 수 있어요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin list --json | grep -q 'korean-law@korean-law-marketplace'"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "법령 검색기를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin update korean-law"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "법령 검색기를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall korean-law"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude plugin uninstall korean-law || true"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "이미 설치돼 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin list --json | findstr korean-law@korean-law-marketplace"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "플러그인 가게를 등록하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin marketplace add https://github.com/chrisryugj/korean-law-mcp.git"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "api_key",
+            "steps": [
+              {
+                "type": "open_url",
+                "friendly": "법제처 인증키 발급 페이지를 열어 드릴게요",
+                "url": "https://open.law.go.kr/LSO/openApi/guideList.do"
+              },
+              {
+                "type": "input_secret",
+                "friendly": "발급받은 인증키를 넣어 주세요",
+                "label": "law_oc"
+              },
+              {
+                "type": "run_command",
+                "friendly": "인증키와 함께 법령 검색기를 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "claude plugin install korean-law@korean-law-marketplace --config api_key={{secret:law_oc}}"
+                ]
+              }
+            ],
+            "guide": [
+              "버튼을 누르면 법제처 발급 페이지가 열려요. 이메일만 있으면 무료로 바로 받아요",
+              "발급받은 인증키(짧은 영문 아이디 모양)를 복사해서 아래 칸에 붙여넣어 주세요",
+              "등록이 끝나면 Claude Code 안에서 법령 검색을 바로 쓸 수 있어요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "설치 목록에 잘 올라갔는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin list --json | findstr korean-law@korean-law-marketplace"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "법령 검색기를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin update korean-law"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "법령 검색기를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin uninstall korean-law"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "claude plugin uninstall korean-law"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "lazycodex",
+      "name": "LazyCodex",
+      "kind": "plugin",
+      "easyDescription": "Codex에 계획 세우기, 자기 검증, 기억력을 더해 주는 강화 키트예요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "recommended": false,
+      "requires": [
+        "codex"
+      ],
+      "source": {
+        "label": "만든 곳: Sisyphus Labs",
+        "url": "https://github.com/code-yeongyu/lazycodex"
+      },
+      "platforms": {
+        "mac": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "path_check",
+              "friendly": "LazyCodex가 이미 붙어 있는지 볼게요",
+              "path": "{{home}}/.local/bin/omo"
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 Codex에 붙이고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes lazycodex-ai@latest install --no-tui"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "잘 붙었는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "{{home}}/.local/bin/omo --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes lazycodex-ai@latest install --no-tui"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes lazycodex-ai uninstall"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "npx --yes lazycodex-ai uninstall"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "path_check",
+              "friendly": "LazyCodex가 이미 붙어 있는지 볼게요",
+              "path": "{{home}}/.local/bin/omo"
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 Codex에 붙이고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes lazycodex-ai@latest install --no-tui"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "path_check",
+              "friendly": "잘 붙었는지 확인하고 있어요",
+              "path": "{{home}}/.local/bin/omo"
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes lazycodex-ai@latest install --no-tui"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "LazyCodex를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes lazycodex-ai uninstall"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npx --yes lazycodex-ai uninstall"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "nodejs-lts",
+      "name": "Node.js",
+      "kind": "prerequisite",
+      "easyDescription": "몇몇 도구가 움직이는 데 필요한 기본 부품이에요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "supportedModels": [],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Node.js가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "node --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "Node.js 공식 설치 파일을 열고 있어요. 설치 창이 뜨면 계속을 눌러 주세요",
+              "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0.pkg",
+              "file_name": "node-v24.18.0.pkg",
+              "command": "open",
+              "args": [
+                "-W",
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "Node.js가 잘 설치됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "node --version"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Node.js에게 첫 인사를 시켜 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "node --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "download_run",
+              "friendly": "Node.js를 새 버전으로 바꾸고 있어요. 설치 창이 뜨면 계속을 눌러 주세요",
+              "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0.pkg",
+              "file_name": "node-v24.18.0.pkg",
+              "command": "open",
+              "args": [
+                "-W",
+                "{{file}}"
+              ]
+            }
+          ],
+          "uninstall": [],
+          "rollback": []
+        },
+        "windows": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "Node.js가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "node --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "Node.js를 설치하고 있어요. 파란 확인 창이 뜨면 예를 눌러 주세요",
+              "command": "winget",
+              "args": [
+                "install",
+                "--id",
+                "OpenJS.NodeJS.LTS",
+                "-e",
+                "--silent",
+                "--accept-package-agreements",
+                "--accept-source-agreements"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "Node.js가 잘 설치됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "node --version"
+              ]
+            }
+          ],
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "Node.js에게 첫 인사를 시켜 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "node --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "Node.js를 새 버전으로 바꾸고 있어요",
+              "command": "winget",
+              "args": [
+                "upgrade",
+                "--id",
+                "OpenJS.NodeJS.LTS",
+                "-e",
+                "--silent",
+                "--accept-package-agreements",
+                "--accept-source-agreements"
+              ]
+            }
+          ],
+          "uninstall": [],
+          "rollback": []
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "kind": "harness",
+      "easyDescription": "메신저로 심부름을 시키는 만능 AI 비서예요. 코딩도 해요",
+      "pricing": {
+        "label": "무료",
+        "kind": "free"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "Claude, GPT, Gemini 외 40여 가지",
+          "accountLabel": "쓰려는 모델의 계정 또는 API 키"
+        }
+      ],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "OpenClaw가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "OpenClaw 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://openclaw.ai/install.sh",
+              "file_name": "openclaw-install.sh",
+              "command": "/bin/bash",
+              "args": [
+                "{{file}}",
+                "--no-onboard"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "OpenClaw 첫 설정을 도와드리고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "openclaw onboard"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
+              "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "OpenClaw 상태를 점검하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "OpenClaw를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw update"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "OpenClaw를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw uninstall --all --yes --non-interactive"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw uninstall --all --yes --non-interactive || true"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "OpenClaw가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "OpenClaw 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://openclaw.ai/install.ps1",
+              "file_name": "openclaw-install.ps1",
+              "command": "powershell",
+              "args": [
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "{{file}}",
+                "-NoOnboard"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "OpenClaw 첫 설정을 도와드리고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "openclaw onboard"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
+              "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "OpenClaw 상태를 점검하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "OpenClaw를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw update"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "OpenClaw를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw uninstall --all --yes --non-interactive"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "openclaw uninstall --all --yes --non-interactive"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "id": "opencode",
+      "name": "OpenCode",
+      "kind": "harness",
+      "easyDescription": "원하는 AI 모델을 골라 쓰는 오픈소스 코딩 도우미예요",
+      "pricing": {
+        "label": "무료로 시작",
+        "kind": "freemium"
+      },
+      "supportedModels": [
+        {
+          "modelLabel": "Claude, GPT, Gemini 외 75개 제공사",
+          "accountLabel": "제공사 계정 또는 무료 Zen 모델"
+        }
+      ],
+      "recommended": false,
+      "requires": [],
+      "platforms": {
+        "mac": {
+          "prerequisites": [],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "OpenCode가 이미 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "download_run",
+              "friendly": "OpenCode 공식 설치 프로그램을 실행하고 있어요",
+              "url": "https://opencode.ai/install",
+              "file_name": "opencode-install.sh",
+              "command": "/bin/bash",
+              "args": [
+                "{{file}}"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "쓸 AI 모델 계정을 연결하고 있어요",
+                "command": "/bin/zsh",
+                "args": [
+                  "-lc",
+                  "opencode"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
+              "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "OpenCode가 잘 응답하는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "OpenCode를 새 버전으로 바꾸고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode upgrade"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "OpenCode를 깨끗하게 지우고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode uninstall --force"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "rm -f ~/.local/bin/opencode"
+              ]
+            }
+          ]
+        },
+        "windows": {
+          "prerequisites": [
+            "nodejs-lts"
+          ],
+          "detect": [
+            {
+              "type": "check_command",
+              "friendly": "OpenCode가 이미 있는지 볼게요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "opencode --version"
+              ]
+            }
+          ],
+          "install": [
+            {
+              "type": "run_command",
+              "friendly": "OpenCode를 설치하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npm install -g opencode-ai@latest"
+              ]
+            },
+            {
+              "type": "check_command",
+              "friendly": "설치가 잘 됐는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "opencode --version"
+              ]
+            }
+          ],
+          "auth": {
+            "pattern": "interactive_terminal",
+            "steps": [
+              {
+                "type": "pty_session",
+                "friendly": "쓸 AI 모델 계정을 연결하고 있어요",
+                "command": "cmd",
+                "args": [
+                  "/C",
+                  "opencode"
+                ]
+              }
+            ],
+            "guide": [
+              "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
+              "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+            ]
+          },
+          "verify": [
+            {
+              "type": "check_command",
+              "friendly": "OpenCode가 잘 응답하는지 확인하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "opencode --version"
+              ]
+            }
+          ],
+          "update": [
+            {
+              "type": "run_command",
+              "friendly": "OpenCode를 새 버전으로 바꾸고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npm install -g opencode-ai@latest"
+              ]
+            }
+          ],
+          "uninstall": [
+            {
+              "type": "run_command",
+              "friendly": "OpenCode를 깨끗하게 지우고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npm uninstall -g opencode-ai"
+              ]
+            }
+          ],
+          "rollback": [
+            {
+              "type": "run_command",
+              "friendly": "설치하다 만 흔적을 정리하고 있어요",
+              "command": "cmd",
+              "args": [
+                "/C",
+                "npm uninstall -g opencode-ai"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

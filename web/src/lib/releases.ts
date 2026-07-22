@@ -3,9 +3,9 @@ export type Asset = { name: string; url: string };
 export type Picks = { macArm?: Asset; macIntel?: Asset; winExe?: Asset; winMsi?: Asset };
 
 export const RELEASES_API =
-  "https://api.github.com/repos/needslab-ai/easy-harness-releases/releases/latest";
+  "https://api.github.com/repos/needsbuilder/easy-harness/releases/latest";
 export const RELEASES_LATEST_PAGE =
-  "https://github.com/needslab-ai/easy-harness-releases/releases/latest";
+  "https://github.com/needsbuilder/easy-harness/releases/latest";
 
 /** 브라우저 UA/플랫폼 문자열로 OS를 추정한다. */
 export function detectOS(ua: string, platform = ""): OS {
