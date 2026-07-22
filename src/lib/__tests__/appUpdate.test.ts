@@ -126,3 +126,47 @@ describe("useAppUpdate", () => {
     expect(mockRelaunch).not.toHaveBeenCalled();
   });
 });
+
+describe("checkNow (설정 화면의 수동 확인)", () => {
+  it("최신이면 uptodate 를 주고 배너는 그대로 둔다", async () => {
+    mockCheck.mockResolvedValue(null);
+    const { result } = renderHook(() => useAppUpdate());
+    await waitFor(() => expect(mockCheck).toHaveBeenCalled());
+
+    let r: string | undefined;
+    await act(async () => {
+      r = await result.current.checkNow();
+    });
+    expect(r).toBe("uptodate");
+    expect(result.current.phase.kind).toBe("idle");
+  });
+
+  it("새 버전이 있으면 available 을 주고 배너도 띄운다", async () => {
+    mockCheck.mockResolvedValueOnce(null); // 마운트 시 자동 확인은 빈손
+    const { result } = renderHook(() => useAppUpdate());
+    await waitFor(() => expect(mockCheck).toHaveBeenCalled());
+    expect(result.current.phase.kind).toBe("idle");
+
+    mockCheck.mockResolvedValueOnce({ downloadAndInstall: vi.fn() });
+    let r: string | undefined;
+    await act(async () => {
+      r = await result.current.checkNow();
+    });
+    expect(r).toBe("available");
+    expect(result.current.phase.kind).toBe("available");
+  });
+
+  it("확인이 실패하면 error 를 주되 배너를 건드리지 않는다", async () => {
+    mockCheck.mockResolvedValueOnce(null);
+    const { result } = renderHook(() => useAppUpdate());
+    await waitFor(() => expect(mockCheck).toHaveBeenCalled());
+
+    mockCheck.mockRejectedValueOnce(new Error("offline"));
+    let r: string | undefined;
+    await act(async () => {
+      r = await result.current.checkNow();
+    });
+    expect(r).toBe("error");
+    expect(result.current.phase.kind).toBe("idle");
+  });
+});

@@ -8,6 +8,9 @@ export type AppUpdatePhase =
   | { kind: "downloading"; percent: number | null } // null = 전체 크기를 몰라 진행률을 못 세는 상태
   | { kind: "failed" };
 
+/** 설정 화면에서 "지금 확인"을 눌렀을 때의 결과 */
+export type ManualCheckResult = "available" | "uptodate" | "error";
+
 /** 앱 자체 업데이트 훅. 마운트 시 1회 조용히 확인하고, install()로 내려받아 재시작한다. */
 export function useAppUpdate() {
   const [update, setUpdate] = useState<Update | null>(null);
@@ -28,6 +31,25 @@ export function useAppUpdate() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  /**
+   * 설정 화면의 "지금 확인" 버튼용. 자동 확인은 앱을 켤 때 딱 1회라, 그때 인터넷이
+   * 잠깐 끊겼으면 앱을 다시 켜기 전까지 새 버전을 못 본다. 그 막다른 길을 없애는 수동 경로다.
+   * 배너용 phase 는 업데이트가 있을 때만 건드린다(없는데 배너가 깜빡이면 안 되니까).
+   */
+  const checkNow = useCallback(async (): Promise<ManualCheckResult> => {
+    try {
+      const u = await check();
+      if (u) {
+        setUpdate(u);
+        setPhase({ kind: "available" });
+        return "available";
+      }
+      return "uptodate";
+    } catch {
+      return "error";
+    }
   }, []);
 
   const install = useCallback(async () => {
@@ -55,5 +77,5 @@ export function useAppUpdate() {
     }
   }, [update]);
 
-  return { phase, install };
+  return { phase, install, checkNow };
 }
