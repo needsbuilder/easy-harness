@@ -10,18 +10,18 @@ export const SITE_URL = "https://easyharness.needslab.ai";
  * 예전엔 릴리스 레포(easy-harness-releases)를 가리켰는데, 스타는 소스 쪽에 쌓여야 의미가 있다.
  * 다운로드 링크는 releases.ts 가 따로 들고 있다.
  */
-export const GITHUB_REPO = "https://github.com/needslab-ai/easy-harness";
+export const GITHUB_REPO = "https://github.com/needsbuilder/easy-harness";
 
 /** 스타 개수를 물어볼 곳. 인증 없이 호출 가능하다 */
-export const GITHUB_REPO_API = "https://api.github.com/repos/needslab-ai/easy-harness";
+export const GITHUB_REPO_API = "https://api.github.com/repos/needsbuilder/easy-harness";
 
 /** 새 도구 추가 요청 이슈를 바로 여는 링크 */
 export const GITHUB_NEW_TOOL_ISSUE =
-  "https://github.com/needslab-ai/easy-harness/issues/new?template=new-tool.yml";
+  "https://github.com/needsbuilder/easy-harness/issues/new?template=new-tool.yml";
 
 /** 기여 가이드 */
 export const GITHUB_CONTRIBUTING =
-  "https://github.com/needslab-ai/easy-harness/blob/main/CONTRIBUTING.md";
+  "https://github.com/needsbuilder/easy-harness/blob/main/CONTRIBUTING.md";
 
 /** 사업자 정보 (사업자등록증 기준) */
 export const BUSINESS = {
