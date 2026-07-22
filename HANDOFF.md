@@ -47,12 +47,13 @@
 - 저작권은 그대로 니즈랩(NOTICE·LICENSE가 정한다. 레포 위치와 무관).
 - `-releases`·`-recipes`는 아직 조직 소유 → 아래 "레포 통합"에서 함께 정리.
 
-### 레포 통합 (다음 작업, v0.1.3과 묶기)
-**레포를 3개로 나눈 유일한 이유는 "소스가 private"이었다**(M5 설계 문서 확인). 오늘 public이 됐으니 명분이 사라졌다. 지금 다운로드 실적이 0회라(v0.1.2 dmg·exe 모두 0) 주소를 바꿔도 끊길 사용자가 없다. **사용자가 생기면 못 옮긴다** — 업데이트 주소가 배포된 앱 안에 박히기 때문.
-1. 레시피 번들을 소스 레포로 옮기고 `recipe/remote.rs`의 `REMOTE_BASE` 수정
-2. `release.yml`이 소스 레포에 릴리스하도록 변경 → **`RELEASES_PAT` 시크릿 불필요해짐**
-3. `tauri.conf.json` updater endpoints, `web/src/lib/releases.ts` 주소 변경
-4. 옛 레포 2개는 **삭제 말고 아카이브**
+### 레포 통합 완료 (2026-07-22, 커밋 9ccb9d9)
+**레포를 3개로 나눈 유일한 이유는 "소스가 private"이었다**(M5 설계 문서 확인). public이 되면서 명분이 사라져 하나로 합쳤다. 다운로드 실적이 0회일 때만 가능한 작업이었다(업데이트 주소가 배포된 앱에 박히므로).
+- 레시피 번들 → `recipes-bundle/`. `REMOTE_BASE`가 이 레포 raw를 본다. `build_recipes_bundle.sh`가 게시본까지 복사하므로 **커밋·푸시 = 배포**.
+- `release.yml`에서 owner/repo를 비워 이 레포에 릴리스 → **`RELEASES_PAT` 시크릿이 더는 안 쓰인다**(레포에는 남아있음, 정리 가능).
+- **v0.1.2 자산 11개를 새 레포로 복사했다.** `latest.json`의 링크는 자산 ID 기반이라 옮기면 깨지므로 **파일명 기반 URL로 재작성**했다(다음에 또 옮겨도 안 깨진다).
+- 옛 레포 2개는 아카이브. **삭제 금지** — v0.1.2 이하 앱이 아직 그 주소를 본다(아카이브 후에도 raw·download 모두 200 확인).
+- 검증: 새 raw 번들 200(82606B, 원본과 동일) · 새 dmg 다운로드 200(11387635B) · 랜딩 다운로드 버튼·푸터 버전(v0.1.2) 정상.
 
 ### 공개 후 남은 것
 - **Apple Developer가 Individual(개인) 명의** → 서명이 `YONG BEOM GWON`으로 나감. 지금 문제는 없으나 법인·팀 계정 전환 시 재서명 필요(사용자 인지함).
@@ -78,7 +79,7 @@
 - 약관은 "명백한 리스크"만 보완한 초안. 유료화·규모 확대 시 변호사 정식 검토 권고(사용자 인지함).
 
 ## 인프라 (재사용)
-- 레포 3종: **`needsbuilder/easy-harness`**(소스, public, Apache-2.0) · `needslab-ai/easy-harness-releases`(public 배포) · `needslab-ai/easy-harness-recipes`(public 번들). 뒤 둘은 통합 예정.
+- 레포는 **`needsbuilder/easy-harness`** 하나(소스+릴리스+레시피 번들, public, Apache-2.0). 옛 `needslab-ai/easy-harness-releases`·`-recipes`는 아카이브 상태로 보존(삭제 금지).
 - GitHub 개인 계정 `needsbuilder`(Yongbeom Gwon), 조직 `needslab-ai`. 커밋 이메일은 전역 지메일.
 - Apple: Team RB6FTGW2DK(Individual), 로컬 키 ~/.tauri/. GitHub 시크릿 9종 등록.
 - 랜딩: Vercel 프로젝트 `needslab/easyharness`, 정식 주소 easyharness.needslab.ai, DNS는 Vercel(ns1/ns2.vercel-dns.com).
