@@ -10,8 +10,16 @@
 - **랜딩 스타 유도**: `GITHUB_REPO`를 릴리스 레포 → **소스 레포**로 교체(스타는 소스에 쌓여야 함). Nav에 스타 개수, `OpenSource.tsx` 섹션 신규(별 주기 + 내 도구 추가하기). `useGithubStars`는 **0개면 숨긴다**(별 0은 사회적 증거 부재를 광고하는 역효과). API 미인증 60회/시간 제한에 걸려도 버튼은 그대로 보이게 실패를 삼킨다.
 - 검증: 실브라우저로 데스크톱·모바일 렌더링, 가로스크롤 없음, 콘솔 에러 없음 확인.
 
+### 소셜 프리뷰 완료
+`web/public/og.png`를 레포 Settings에 업로드함. **gh CLI에는 이 API가 없어서** playwriter로 사용자 크롬에 붙어 `#repo-image-file-input`에 `setInputFiles`로 넣었다. 검증은 레포 HTML의 `og:image`가 `repository-images.githubusercontent.com/...`인지로 한다(기본값이면 `opengraph.githubassets.com`).
+- 함정: 업로드 성공해도 "Upload an image to customize..." 안내 문구는 그대로 남는다. 콘솔의 503 로그도 무관한 리소스 것이라 실패로 오판하기 쉽다. **판정은 반드시 og:image로.**
+
+### 이슈 템플릿 실측 결과
+- YAML 폼은 **GraphQL `issueTemplates`에 안 잡힌다**(빈 배열). 마크다운 템플릿만 반환하므로 API로는 검증 불가 → 로그인 상태의 브라우저로 `issues/new/choose`를 봐야 한다.
+- **`mailto:` contact_link는 GitHub이 렌더링하지 않는다**(실측). 메일 안내는 SECURITY.md에만 둔다.
+- 보안 신고 항목은 GitHub이 "Report a security vulnerability"를 자동 제공하므로 config.yml에 또 적으면 중복이다 → 제거함.
+
 ### 아직 남은 것
-- **소셜 프리뷰 이미지 미설정**: gh CLI로 불가. 웹 Settings 맨 위에서 `web/public/og.png`를 업로드해야 레포 링크 공유 시 썸네일이 뜬다.
 - Code of Conduct 없음(CONTRIBUTING 말미 "서로에 대한 예의"로 대신 중, GitHub은 인식 못 함) · Discussions 비활성(관리 부담)
 
 ### 결정 (2026-07-22)
