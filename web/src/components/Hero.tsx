@@ -49,27 +49,22 @@ export function Hero({ picks, failed }: { picks: Picks; failed: boolean }) {
           <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
             <DownloadButton picks={picks} failed={failed} />
           </div>
-          {/* 다운로드가 주 CTA 라서 스타 유도는 한 줄 링크로 가볍게 둔다 */}
+          {/* 다운로드가 주 CTA 라 버튼은 아니지만, 눈에 걸리도록 알약 배경을 준다 */}
           <a
             href={GITHUB_REPO}
             target="_blank"
             rel="noopener"
-            className="group mt-5 inline-flex items-center gap-[9px] text-[0.9rem] text-txt-tertiary transition hover:text-txt-primary"
+            className="group mt-5 inline-flex items-center gap-[10px] rounded-full border border-line-gold bg-surface-card px-[16px] py-[10px] text-[0.95rem] shadow-[0_2px_10px_rgba(42,32,24,0.05)] transition hover:border-brand hover:bg-surface-gold-tint"
           >
-            <GithubIcon className="h-[15px] w-[15px]" />
-            <span className="break-keep">
+            <GithubIcon className="h-[17px] w-[17px] text-txt-secondary transition group-hover:text-txt-primary" />
+            <span className="break-keep text-txt-secondary transition group-hover:text-txt-primary">
               오픈소스예요. 마음에 들면{" "}
-              <span className="font-bold text-txt-gold underline decoration-[rgba(216,172,59,0.5)] underline-offset-[3px] transition group-hover:decoration-brand">
-                GitHub에 별 하나
-              </span>{" "}
-              눌러주세요
+              <span className="font-extrabold text-txt-gold">GitHub에 별 하나</span> 눌러주세요
             </span>
-            {stars !== null && (
-              <span className="inline-flex items-center gap-[3px] rounded-full bg-surface-gold-tint px-[9px] py-[2px] font-mono text-[0.78rem] font-semibold text-txt-gold">
-                <StarIcon className="h-[11px] w-[11px]" />
-                {formatStars(stars)}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-[3px] rounded-full bg-surface-gold-tint px-[9px] py-[3px] font-mono text-[0.8rem] font-bold text-txt-gold transition group-hover:bg-brand group-hover:text-white">
+              <StarIcon className="h-[12px] w-[12px]" />
+              {stars !== null ? formatStars(stars) : "Star"}
+            </span>
           </a>
         </div>
         <div className="relative order-first flex min-h-[300px] items-center justify-center md:order-last md:min-h-[380px]">
