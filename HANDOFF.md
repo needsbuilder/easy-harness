@@ -1,29 +1,56 @@
 # HANDOFF — 이지 하네스
 
-## 현재 작업 (2026-07-10) — 랜딩페이지 리디자인 배포
-랜딩페이지를 "세련되게" 리디자인 + 리모션 데모영상 + 약관 2종 추가해서 실제 `web/` React 코드로 이식 완료. 브랜치 `feat/landing-download-os-split`에 커밋됨. **push + `vercel --prod` 배포 진행 중/완료.**
+## 현재 작업 (2026-07-22) — Apache-2.0 오픈소스 공개
 
-### 이번에 한 것 (전부 web/ + remotion-demo/)
-- **랜딩 리디자인**: Nav(GitHub 레포 버튼) · Hero(좌우 비대칭, 오공이 광배·float) · DemoVideo(리모션 영상) · Steps(01/02/03, 선 없음) · Tools(실물 로고 그리드+플러그인 칩) · CtaSection · Footer(사업자정보+약관링크). **골드 단색 톤 통일(청록 UI 전부 제거 — 사용자 "짜친다". 재도입 금지)**. em dash·이모지 금지, Pretendard, break-keep.
-- **리모션 데모영상**: `remotion-demo/`(Remotion 4.0.486). 24초 4씬(Intro·PickTool·Installing·Done). 골드톤. 오공이가 **설치창 앞을**(zIndex:5) 기울여 대각선으로 날아감. 렌더→`web/public/demo.mp4`+`demo-poster.png`. 재렌더: `cd remotion-demo && npx remotion render EasyHarnessDemo out/demo.mp4` 후 web/public에 복사.
-- **약관 2종**: `/terms`·`/privacy` 라우트(react-router-dom 7) + `vercel.json` SPA rewrite. **korean-law MCP 검토 반영**: 이용약관 면책조항에 고의·중과실 배제 단서(약관규제법 §7①), 개인정보처리방침에 파기·안전성·쿠키·구제방법 4항목 추가(개보법 §30). 시행일 2026-07-10.
-- **푸터 사업자정보**(실값, `web/src/lib/links.ts`): 니즈랩(NeedsLab)·권용범·825-16-02771·경기 광명시 소하로 190 B동 12층 1217호·hello@needslab.ai.
+**남은 액션: ① 커밋 2개 push ② `easy-harness` 레포 public 전환** (둘 다 사용자 승인 대기 중)
 
-### 배포
-- 랜딩 배포는 git 연동 아님 → **`vercel deploy --prod --cwd web`** (프로젝트 easyharness, 공개 별칭 easyharness.vercel.app). 미리보기는 `vercel deploy --cwd web`(단 프리뷰 URL은 Vercel 로그인벽 있어 curl 불가).
-- 배포 후 확인: 랜딩 영상 자동재생 + `/terms`·`/privacy` 직접접속 200 + 모바일 가로스크롤 없음.
+### 결정 (2026-07-22)
+- **직접 수익화 안 함**. 무료·오픈소스로 인지도를 쌓아 **책·강의·해커톤**으로 수익화하는 방향(사용자 판단). 유료 기능 계획 없음 → 라이선스 분리 구조 불필요.
+- **라이선스 Apache-2.0**. MIT 대신 고른 이유는 상표 조항(6조)으로 "이지 하네스" 이름 무단 재배포를 막을 근거가 생기기 때문.
+- **소유는 니즈랩, 얼굴은 권용범**. NOTICE=저작권 니즈랩, README "만든 사람"=개인 서사(책·강의는 법인이 아니라 사람이 팖).
+- **커밋 이메일은 `ybgwon96@gmail.com` 유지**(전역 설정 그대로). hello@needslab.ai로 바꿨다가 사용자가 되돌림. 레포 로컬 git 설정 없음.
+- **히스토리 재작성 안 함**: 태그 v0.1.0~v0.1.2가 있어 SHA가 바뀌면 릴리스↔소스 대응이 깨진다. 과거 커밋 168개의 개인 지메일 노출은 감수.
+- **HANDOFF·docs·CLAUDE.md 공개 그대로 둠**(사용자 결정). 홍보용 `스레드용_*.png`는 gitignore.
 
-### 남은 것 / 주의
-- 약관은 "명백한 리스크"만 보완한 초안 — 유료화·규모 확대 시 변호사 정식 검토 권고(사용자 인지함).
-- 이 리디자인 브랜치는 아직 main 미머지 — 배포는 브랜치에서 직접 vercel로 나감. main 반영은 PR로 별도 정리 필요할 수 있음.
+### 공개 전 안전 점검 완료
+히스토리 4만 줄 diff 전수 스캔 → API 키·개인키·.env 커밋 이력 **없음**. 걸린 건 전부 `scan_secrets.rs`의 가짜 테스트 값. Apple Team ID·시크릿 "이름"은 노출되나 값은 아니며 서명된 앱에 이미 들어있어 비밀 아님.
+
+### 만든 문서 (커밋 `8a7b51f`)
+`LICENSE`(apache.org 원문) · `NOTICE`(상표 조항) · `README.md`(전면 개편) · `CONTRIBUTING.md` · `SECURITY.md` · package.json·Cargo.toml `license` 필드.
+
+- **CONTRIBUTING이 핵심**: 도구 제작자가 직접 레시피를 PR하게 만드는 게 "사용자 노동 없는 성장 엔진". "JSON 한 개면 되고 Rust·React 몰라도 된다"를 앞세우고, Step 7종·치환자·인증 4패턴·문구 규칙·`real_recipes.rs` 테스트 작성법까지 적음.
+- **레시피 PR = 보안 리뷰**로 취급한다고 명시(사용자 PC에서 실제 명령 실행). 서명은 관리자만 하므로 머지≠배포.
+
+### 공개 전환 명령 (승인 후)
+```bash
+git push origin main
+gh repo edit needslab-ai/easy-harness --visibility public --accept-visibility-change-consequences
+```
+
+### 공개 후 남은 것
+- **Apple Developer가 Individual(개인) 명의** → 서명이 `YONG BEOM GWON`으로 나감. 지금 문제는 없으나 법인·팀 계정 전환 시 재서명 필요(사용자 인지함).
+- 인지도→수익 전환 장치 3종이 아직 **없음**(사용자에게 지적한 상태): ① 설치 성공 화면에서 다음 단계로 보내는 통로 ② 이메일 명단(개인정보처리방침에 수집 항목 추가 필요) ③ 제품에 드러난 개인 브랜드.
+
+---
+
+## 완료 (2026-07-22) — 랜딩 정식 주소 확정
+`easyharness.needslab.ai`를 정식(canonical) 주소로 확정하고 배포·검증까지 끝. 커밋 `2a8ff9f`.
+
+- **easyharness.com은 구매 불가**: 2018년 등록(호주), 만료 2026-08-14, 빈 페이지 상태. 8년째 미사용이라 **9월 말~10월에 드롭 여부 재확인 가치 있음**. 대안 미등록: easy-harness.com(~$20/년)·easyharness.co·.io·.kr.
+- **vercel.json**: `.vercel.app` → needslab.ai 308 영구 이동. **루트(`/`)는 `:path*`가 빈 경로를 안 잡아 규칙을 따로 둬야 한다**(첫 배포에서 홈만 리다이렉트 누락돼 재배포함). `type: "host"`는 openapi.vercel.sh/vercel.json 스키마로 검증한 정식 문법.
+- **og.png가 아예 없어서 카톡·슬랙 공유 썸네일이 안 뜨고 있었다**. SPA rewrite 탓에 없는 파일도 200(text/html)으로 나와 그동안 안 드러남. demo-poster.png를 1200x630으로 크롭해 생성. 같은 이유로 robots.txt·sitemap.xml도 없었음 → 추가.
+- 검증: `.vercel.app`의 `/`·`/terms`·`/privacy`·`/og.png` 전부 308 → 정식 주소 200. og.png가 `image/png`로 정상 서빙.
+- 배포는 여전히 git 연동 아님 → **`vercel deploy --prod --cwd web`**.
 
 ---
 
 ## 백로그 (별개, 보류 중)
-- **앱 v0.1.3 릴리스 보류**("다 정리하고 한 번에". 배포된 앱은 v0.1.2). 절차·함정은 CLAUDE.md "릴리스 절차 (M5)".
+- **앱 v0.1.3 릴리스 보류**("다 정리하고 한 번에". 배포된 앱은 v0.1.2). 절차·함정은 CLAUDE.md "릴리스 절차 (M5)". 오픈소스 공개와 함께 정리하기로 한 건이므로 공개 직후 재검토.
 - **M6 윈도우 트랙 완료**: PR #2·#3·#4 머지. 잔여(선택): codex·claude-code `.local\bin` PATH 윈도우 실기 확인.
 - **카탈로그 "실제 설치 감지" 보류**(2026-07-08 Agent Teams 검토): 삭제 안전장치(Dashboard.tsx 경고가 catalog.installed 의존) 훼손·이름충돌 오탐(hermes)·타임아웃 전무 리스크. 재착수 시 "스캔 버튼식+하드 타임아웃(fail-open)+installed.json 불변+stdout 검증".
+- 약관은 "명백한 리스크"만 보완한 초안. 유료화·규모 확대 시 변호사 정식 검토 권고(사용자 인지함).
 
 ## 인프라 (재사용)
-- 레포 3종(needslab-ai): easy-harness(private 소스) · easy-harness-releases(public 배포) · easy-harness-recipes(public 번들)
-- Apple: Team RB6FTGW2DK, 로컬 키 ~/.tauri/. GitHub 시크릿 9종 등록.
+- 레포 3종(needslab-ai): easy-harness(소스, **public 전환 예정**) · easy-harness-releases(public 배포) · easy-harness-recipes(public 번들)
+- Apple: Team RB6FTGW2DK(Individual), 로컬 키 ~/.tauri/. GitHub 시크릿 9종 등록.
+- 랜딩: Vercel 프로젝트 `needslab/easyharness`, 정식 주소 easyharness.needslab.ai, DNS는 Vercel(ns1/ns2.vercel-dns.com).
