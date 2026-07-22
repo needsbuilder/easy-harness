@@ -1,0 +1,94 @@
+name: 새 도구 추가 요청
+description: 이지 하네스로 설치할 수 있게 하고 싶은 AI 코딩 도구나 확장을 알려주세요
+title: "[도구 추가] "
+labels: ["new-tool"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        도구를 추가하는 데 필요한 건 JSON 파일 한 개입니다. Rust나 React를 몰라도 됩니다.
+
+        아래를 채워주시면 레시피를 만들 수 있습니다.
+        직접 만들어 보고 싶으시면 [기여 가이드](../blob/main/CONTRIBUTING.md)에 처음부터 끝까지 적어뒀습니다.
+
+  - type: input
+    id: name
+    attributes:
+      label: 도구 이름
+      placeholder: 예) 가재코드
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 무엇을 해 주는 도구인가요
+      description: 터미널을 처음 여는 사람도 알아들을 수 있게 한 문장으로 써주세요.
+      placeholder: 예) 꼼꼼히 묻고 계획을 세운 뒤 코딩하는 한국산 AI 도우미예요
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: 공식 링크
+      description: GitHub 저장소나 공식 홈페이지
+      placeholder: https://github.com/...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 어떤 종류인가요
+      options:
+        - AI 코딩 도구 (단독으로 씀)
+        - 확장 (Claude Code 같은 도구에 붙여서 씀)
+        - 잘 모르겠어요
+    validations:
+      required: true
+
+  - type: textarea
+    id: install
+    attributes:
+      label: 설치 명령
+      description: 맥과 윈도우가 다르면 둘 다 적어주세요. 하나만 아셔도 괜찮습니다.
+      placeholder: |
+        맥:      npm install -g my-tool
+        윈도우:  npm install -g my-tool
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: auth
+    attributes:
+      label: 로그인이 필요한가요
+      description: 이 앱은 터미널을 되도록 감춥니다. 로그인 없이 되는 게 가장 좋습니다.
+      options:
+        - 로그인이 필요 없어요
+        - 브라우저로 로그인해요
+        - API 키를 넣어야 해요
+        - 터미널에서 직접 입력해야 해요
+        - 잘 모르겠어요
+    validations:
+      required: true
+
+  - type: textarea
+    id: verify
+    attributes:
+      label: 잘 깔렸는지 어떻게 확인하나요
+      description: 설치가 끝난 뒤 실행해서 확인할 수 있는 명령이 있으면 알려주세요.
+      placeholder: 예) my-tool --version 을 치면 버전이 나와요
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: relation
+    attributes:
+      label: 해당하는 것에 체크해 주세요
+      options:
+        - label: 제가 만든 도구입니다
+        - label: 레시피를 직접 작성해서 PR을 올려보고 싶습니다
+        - label: 맥에서 직접 설치해 봤습니다
+        - label: 윈도우에서 직접 설치해 봤습니다

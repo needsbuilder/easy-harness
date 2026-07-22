@@ -6,6 +6,7 @@ import { Hero } from "./components/Hero";
 import { DemoVideo } from "./components/DemoVideo";
 import { Steps } from "./components/Steps";
 import { Tools } from "./components/Tools";
+import { OpenSource } from "./components/OpenSource";
 import { CtaSection } from "./components/CtaSection";
 import { Footer } from "./components/Footer";
 import Terms from "./pages/Terms";
@@ -21,6 +22,7 @@ function Landing() {
         <DemoVideo />
         <Steps />
         <Tools />
+        <OpenSource />
         <CtaSection picks={release.picks} failed={release.failed} />
       </main>
       <Footer version={release.version} />
