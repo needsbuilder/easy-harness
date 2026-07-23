@@ -136,7 +136,7 @@ export function Wizard() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-surface-bg dark:bg-surface-bg-dark px-8 py-12">
-      <WizardStepper current={state.phase} toolName={toolName} helperNames={helperNames} />
+      <WizardStepper current={state.phase} toolName={toolName} helperNames={helperNames} failed={!!state.error} />
       <div className={`mt-12 w-full ${state.terminalSession ? "max-w-5xl" : "max-w-2xl"} text-center`}>
         {state.error ? (
           <ErrorPanel

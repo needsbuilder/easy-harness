@@ -34,7 +34,11 @@ function phaseOf(ev: ProgressEvent, targetId: string): 1 | 2 | 3 | 4 {
 
 export function runReducer(state: RunState, ev: ProgressEvent): RunState {
   const percent = ev.totalSteps === 0 ? 0 : Math.round((ev.stepIndex / ev.totalSteps) * 100);
-  const phase = Math.max(state.phase, phaseOf(ev, state.targetId)) as RunState["phase"];
+  // 실패한 뒤에도 마무리 이벤트(done 등)가 뒤따라 오는데, 그게 단계를 앞으로 밀면
+  // 정작 실패한 단계가 완료(✓)로 그려진다. 실패 후에는 단계를 그 자리에 묶어 둔다.
+  const phase = state.error
+    ? state.phase
+    : (Math.max(state.phase, phaseOf(ev, state.targetId)) as RunState["phase"]);
   const base = {
     ...state,
     currentRecipeId: ev.recipeId || state.currentRecipeId,
