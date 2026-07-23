@@ -16,7 +16,14 @@ use recipe::loader::Catalog;
 use state::StateStore;
 
 /// 번들 리소스보다 낮은 버전의 원격 캐시는 무시하고 번들로 폴백한다.
-const BUNDLED_MIN_VERSION: u64 = 1;
+/// 이 값보다 낮은 원격 캐시는 무시하고 앱에 내장된 레시피를 쓴다.
+///
+/// **앱 릴리스가 내장 레시피를 바꿨다면 반드시 (게시된 최신 bundleVersion + 1)로 올린다.**
+/// 안 올리면 사용자 기기에 남아 있는 낡은 캐시가 새 내장 레시피를 이겨서 수정이 안 켜진다.
+/// 번들을 게시한 뒤에는 `min <= 게시 버전` 상태로 수렴시킨다(계속 앞질러 두면 원격 갱신을 통째로 무시하게 된다).
+///
+/// 2 = v0.1.4의 claude-code·opencode 인증 명령 교체분. 게시 번들은 아직 1이다.
+const BUNDLED_MIN_VERSION: u64 = 2;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

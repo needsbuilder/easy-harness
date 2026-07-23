@@ -35,10 +35,58 @@ Finder로 켠 GUI 앱은 PATH가 `/usr/bin:/bin:/usr/sbin:/sbin` 뿐이다. `pro
 - 타임아웃 후에도 셸 스레드가 `output()`에 매달려 남을 수 있다. 앱 수명당 최대 2개라 방치. stderr는 버려서 흔한 멈춤 경로는 막음
 - **실제 앱 빌드로 OpenClaw 재설치 end-to-end 재현은 아직 안 함.** 메커니즘은 증명됨
 
-### 다음
-- [ ] 커밋 + v0.1.4 릴리스 (`tauri.conf.json` version 올리고 태그 push)
-- [ ] 릴리스 후 OpenClaw 설치를 실제 dmg로 재시도해 end-to-end 확인
-- [ ] UX 관찰 3건은 별도: 준비물 정체 안 알려줌 · 첫 화면에 도구 이름 없음 · "3분" 약속 미검증
+### ✅ end-to-end 검증 완료 (v0.1.4 실제 빌드)
+새 dmg를 받아 설치하고 **OpenClaw 설치를 다시 돌려 성공**했다. `/Users/ybg/.npm-global/bin/openclaw` 2026.7.1-2 실제 설치됨. node는 v22.23.1 그대로(Homebrew 강탈 없음). PTY 안에서 OpenClaw이 `Claude Code (installed)` 를 감지 → `pty.rs` 주입도 작동 확인.
+
+---
+
+## 🔧 미커밋 수정 2 (2026-07-23) — 인증 레시피 낡음 (claude-code · opencode)
+
+**실사용 중 발견.** OpenClaw 인증 화면의 안내가 "질문이 나오면 Enter로 기본값"인데 실제로는 자유 대화형이라 **영어로 `yes`를 타이핑**해야 했다. 도구가 온보딩을 바꾸는 동안 레시피 문구만 낡은 것. 같은 문제가 다른 두 개에도 있었다.
+
+### 고친 것 (레시피 JSON만. 스키마·UI 변경 0, 호환성 위험 0)
+
+| 도구 | 전 | 후 |
+|---|---|---|
+| **claude-code** | `interactive_terminal` + 맨 `claude`(풀 채팅 TUI). 안내는 "로그인 안내 나오면 Enter, 끝나면 `/exit`" | **`browser_login` + `claude auth login`.** 브라우저만 열리고 타이핑 없음. verify에 `claude auth status` 의 `"loggedIn": true` 검사 추가 |
+| **opencode** | 맨 `opencode`(풀 채팅 TUI). 안내는 "까만 창에 `/connect` 입력" | **`opencode auth login`** 자격증명 전용 화면. 안내도 현실에 맞게 |
+
+**왜 이게 문제였나**: 둘 다 **이미 로그인된 사용자**에게는 안내가 완전히 헛돌았다. 로그인 안내가 안 나오고 그냥 채팅창이 뜬다(실측: `claude auth status` → `loggedIn: true`). 선례는 `codex.json` 이 이미 `browser_login` + `codex login` + verify `codex login status` 로 정확히 구현하고 있었다.
+
+**주의**: 터미널 자체는 여전히 뜬다(`pty_session` 이라서). 개선된 건 **채팅창 대신 로그인 전용 화면이 뜨고 타이핑할 게 없어진 것**이다. UI는 `auth.pattern` 을 렌더링에 안 쓰고 `guide` 만 쓴다.
+
+### 새 회귀 테스트 2개
+- `auth_steps_use_dedicated_login_commands_not_bare_tui` — 맨 도구 이름 실행으로 되돌아가는 걸 막는다
+- `auth_guides_do_not_mention_removed_steps` — 없어진 조작(`/exit`·`/connect`)을 안내에 남기는 걸 막는다. **실제로 작성 중 내 카피를 잡았다**("`/exit` 를 입력할 필요 없어요" → 초보자가 몰랐던 개념을 꺼내서 없다고 말하는 문장)
+
+### `BUNDLED_MIN_VERSION` 1 → 2 (중요)
+앱 내장 레시피가 바뀌었으므로 올렸다. **안 올리면 사용자 기기에 캐시된 낡은 번들(v1)이 새 내장 레시피를 이겨서 수정이 안 켜진다.** 운용 규칙을 CLAUDE.md에 명문화했다.
+
+### 원격 번들은 아직 안 밀었다 (의도적)
+스키마를 안 바꿔서 옛 앱도 읽을 수는 있다. 그런데 새 레시피가 `claude auth login`·`opencode auth login` 을 쓰므로, **옛 CLI 버전에 그 서브커맨드가 없는 사용자는 인증이 깨진다.** 앱 업데이트와 함께 나가는 게 안전하다. 번들 게시는 v0.1.4 확산을 지켜본 뒤 `bundleVersion: 2` 로.
+
+---
+
+## 📋 다음 (v0.1.5 예정) — A+ 동의 화면 + OpenClaw 비대화형
+
+사용자 결정: **덩어리 1(claude-code·opencode)만 v0.1.4에, OpenClaw 동의 인프라는 v0.1.5로.**
+
+### 설계는 나왔다 (에이전트 3개 조사 결과)
+**핵심 발견**: `Step` 은 내부 태그드 enum이라 `deny_unknown_fields` 를 못 건다 → **기존 variant 안의 선택 필드만이 옛 앱을 안 깨는 유일한 확장 통로**다(실측 검증됨).
+
+**설계**: `input_secret` 스텝에 `consent` 선택 필드를 달고, 동의를 **명령을 완성시키는 값**으로 쓴다. `{{secret:...}}` 로 `--accept-risk` 를 주입 → 동의를 안 하면 플래그가 안 들어가고, `--non-interactive` 는 `--accept-risk` 없이는 OpenClaw 스스로 거부한다. **UI를 우회해도 실행이 물리적으로 성립하지 않는다(fail closed).** 옛 앱은 암호칸을 보고 아무 값이나 넣어도 실패한다.
+
+파일 약 20개(백엔드 6·프런트 6·테스트·번들 운용). 배포는 **앱 먼저 → 확산 확인 → 번들 v2** 순서.
+
+### ⚠️ 시작 전에 풀어야 할 미해결 문제
+**`--non-interactive` 는 `--auth-choice` 를 요구하는데, `skip` 으로 넘기면 모델 미설정이 되어 기존 verify(`openclaw models status`)가 실패한다.** `--auth-choice claude-cli` 고정도 안 된다(Claude Code 미로그인 사용자에게 재시도 없이 fail-fast). **동의 다음에 모델 인증을 어떻게 붙일지가 아직 설계 안 됨.** 여기부터 정해야 한다.
+
+검증 시 주의: 실기기에서 `openclaw onboard --non-interactive` 를 그냥 돌리면 대표님 실계정 설정을 덮어쓸 수 있다. `OPENCLAW_STATE_DIR`/`--profile` 로 격리된 프로필에서 해야 한다.
+
+### 그 밖에 남은 것
+- `pty.rs` PATH 주입에는 회귀 테스트가 없다(PTY 테스트 구성 비용)
+- UX 관찰 3건: 준비물 정체 안 알려줌 · 첫 화면에 도구 이름 없음 · "3분" 약속 미검증
+- OpenClaw auth 진입 게이트 없음 — 이미 로그인된 사용자도 pty를 무조건 띄운다(`step_runner.rs` 변경 필요)
 
 > ⚠️ **노출 실험 판정(7/29)에 영향**: 다운로드 4명 중 누군가 이 버그를 만났을 수 있다. "수요가 없다"가 아니라 "제품이 안 됐다"일 가능성. v0.1.4 배포 후 재실험을 검토할 것.
 

@@ -23,12 +23,12 @@
       "auth": {
         "pattern": "interactive_terminal",
         "steps": [
-          { "type": "pty_session", "friendly": "쓸 AI 모델 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "opencode"] }
+          { "type": "pty_session", "friendly": "쓸 AI 모델 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "opencode auth login"] }
         ],
         "guide": [
-          "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
-          "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-          "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+          "까만 창에 로그인 전용 화면이 바로 떠요. 채팅 화면이 아니에요",
+          "위아래 화살표로 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+          "연결이 끝나면 이 화면이 알아서 다음으로 넘어가요"
         ]
       },
       "verify": [
@@ -57,12 +57,12 @@
       "auth": {
         "pattern": "interactive_terminal",
         "steps": [
-          { "type": "pty_session", "friendly": "쓸 AI 모델 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "opencode"] }
+          { "type": "pty_session", "friendly": "쓸 AI 모델 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "opencode auth login"] }
         ],
         "guide": [
-          "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
-          "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-          "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+          "까만 창에 로그인 전용 화면이 바로 떠요. 채팅 화면이 아니에요",
+          "위아래 화살표로 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+          "연결이 끝나면 이 화면이 알아서 다음으로 넘어가요"
         ]
       },
       "verify": [
