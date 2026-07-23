@@ -63,6 +63,38 @@ fn auth_steps_use_dedicated_login_commands_not_bare_tui() {
     }
 }
 
+/// rollback은 "설치하다 만 것"만 되돌려야 한다. 사용자가 원래 쓰던 설정·워크스페이스까지
+/// 지우면 안 된다. `step_runner`는 인증 터미널을 사용자가 닫기만 해도(종료코드 != 0)
+/// rollback을 부르므로, 여기에 전체 삭제 명령이 있으면 그게 곧 데이터 손실이다.
+/// (실측 2026-07-23: openclaw rollback이 `uninstall --all`이었다.
+///  `--all` = service + state + workspace + app 전부 삭제)
+#[test]
+fn rollback_must_not_wipe_user_data() {
+    let cat = catalog();
+    // 도구를 지우는 건 맞지만, 사용자 데이터까지 쓸어가는 표식이 있으면 안 된다.
+    let banned = ["--all", "rm -rf ~", "--reset-scope full"];
+    for r in &cat.recipes {
+        let id = &r.id;
+        for p in [Platform::Mac, Platform::Windows] {
+            let Some(spec) = r.platforms.get(p) else {
+                continue;
+            };
+            for step in &spec.rollback {
+                let args = match step {
+                    Step::RunCommand { args, .. } => args.join(" "),
+                    _ => continue,
+                };
+                for bad in banned {
+                    assert!(
+                        !args.contains(bad),
+                        "{id} {p:?}: rollback이 사용자 데이터를 지운다 → `{bad}` in `{args}`"
+                    );
+                }
+            }
+        }
+    }
+}
+
 /// 안내 문구가 실제 화면과 어긋나면 안 된다. 없어진 조작을 안내하는 건 사고다.
 #[test]
 fn auth_guides_do_not_mention_removed_steps() {
