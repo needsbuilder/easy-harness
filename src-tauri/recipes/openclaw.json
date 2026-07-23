@@ -23,12 +23,12 @@
       "auth": {
         "pattern": "interactive_terminal",
         "steps": [
-          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw onboard"] }
+          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw onboard --classic"] }
         ],
         "guide": [
-          "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
-          "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-          "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+          "까만 창의 질문은 화살표 위아래로 골라서 Enter를 누르면 돼요. 영어를 입력할 일은 없어요",
+          "맨 처음 영어 질문은 'AI 비서에게 내 컴퓨터를 맡긴다'는 확인이에요. 괜찮으면 그대로 Enter를 눌러 주세요",
+          "다음 목록에서 쓰려는 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요"
         ]
       },
       "verify": [
@@ -42,7 +42,7 @@
         { "type": "run_command", "friendly": "OpenClaw를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw uninstall --all --yes --non-interactive"] }
       ],
       "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "openclaw uninstall --all --yes --non-interactive || true"] }
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "npm uninstall -g openclaw || true"] }
       ]
     },
     "windows": {
@@ -57,12 +57,12 @@
       "auth": {
         "pattern": "interactive_terminal",
         "steps": [
-          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "cmd", "args": ["/C", "openclaw onboard"] }
+          { "type": "pty_session", "friendly": "OpenClaw 첫 설정을 도와드리고 있어요", "command": "cmd", "args": ["/C", "openclaw onboard --classic"] }
         ],
         "guide": [
-          "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
-          "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-          "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+          "까만 창의 질문은 화살표 위아래로 골라서 Enter를 누르면 돼요. 영어를 입력할 일은 없어요",
+          "맨 처음 영어 질문은 'AI 비서에게 내 컴퓨터를 맡긴다'는 확인이에요. 괜찮으면 그대로 Enter를 눌러 주세요",
+          "다음 목록에서 쓰려는 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요"
         ]
       },
       "verify": [
@@ -76,7 +76,7 @@
         { "type": "run_command", "friendly": "OpenClaw를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "openclaw uninstall --all --yes --non-interactive"] }
       ],
       "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "openclaw uninstall --all --yes --non-interactive"] }
+        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "npm uninstall -g openclaw"] }
       ]
     }
   }

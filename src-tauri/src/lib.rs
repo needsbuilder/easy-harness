@@ -22,8 +22,8 @@ use state::StateStore;
 /// 안 올리면 사용자 기기에 남아 있는 낡은 캐시가 새 내장 레시피를 이겨서 수정이 안 켜진다.
 /// 번들을 게시한 뒤에는 `min <= 게시 버전` 상태로 수렴시킨다(계속 앞질러 두면 원격 갱신을 통째로 무시하게 된다).
 ///
-/// 2 = v0.1.4의 claude-code·opencode 인증 명령 교체분. 게시 번들은 아직 1이다.
-const BUNDLED_MIN_VERSION: u64 = 2;
+/// 3 = v0.1.5의 openclaw rollback·onboard 교체분. 게시 번들은 아직 1이다.
+const BUNDLED_MIN_VERSION: u64 = 3;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
