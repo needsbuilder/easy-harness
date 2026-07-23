@@ -43,6 +43,50 @@ fn claude_code_recipe_spec() {
     assert_eq!(plan.tool_order, vec!["claude-code"]);
 }
 
+/// 인증은 전용 로그인 명령을 써야 한다. 맨 도구 이름(`claude`·`opencode`)을 그냥 실행하면
+/// 채팅 TUI가 떠서, 이미 로그인된 사용자는 안내와 전혀 다른 화면을 보게 된다.
+/// (실측 2026-07-23: openclaw 안내는 "Enter로 기본값"인데 실제로는 영어로 yes를 쳐야 했다.
+///  도구가 온보딩 방식을 바꾸는 동안 레시피 문구만 낡는 사고가 실제로 났다.)
+#[test]
+fn auth_steps_use_dedicated_login_commands_not_bare_tui() {
+    let cat = catalog();
+    for (id, must_contain) in [("claude-code", "auth login"), ("opencode", "auth login")] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        for p in [Platform::Mac, Platform::Windows] {
+            let auth = r.platforms.get(p).unwrap().auth.as_ref().unwrap();
+            let ok = auth.steps.iter().any(|s| match s {
+                Step::PtySession { args, .. } => args.iter().any(|a| a.contains(must_contain)),
+                _ => false,
+            });
+            assert!(ok, "{id} {p:?}: 인증이 `{must_contain}` 을 안 쓴다");
+        }
+    }
+}
+
+/// 안내 문구가 실제 화면과 어긋나면 안 된다. 없어진 조작을 안내하는 건 사고다.
+#[test]
+fn auth_guides_do_not_mention_removed_steps() {
+    let cat = catalog();
+    for (id, banned) in [
+        // `claude auth login` 은 로그인만 하고 스스로 끝난다. /exit 를 칠 창이 없다.
+        ("claude-code", "/exit"),
+        // `opencode auth login` 은 자격증명 화면이라 /connect·/exit 둘 다 해당 없음.
+        ("opencode", "/connect"),
+        ("opencode", "/exit"),
+    ] {
+        let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
+        for p in [Platform::Mac, Platform::Windows] {
+            let auth = r.platforms.get(p).unwrap().auth.as_ref().unwrap();
+            for line in &auth.guide {
+                assert!(
+                    !line.contains(banned),
+                    "{id} {p:?}: 안내에 이제 안 하는 조작이 남아 있다 → {line}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn codex_recipe_spec() {
     let cat = catalog();
@@ -314,6 +358,7 @@ fn auth_verify_steps_check_real_login() {
     // (mac은 grep 패턴, windows는 powershell Select-String 패턴에 같은 문자열이 들어감).
     for (id, needle) in [
         ("codex", "Logged in"),
+        ("claude-code", "\"loggedIn\": true"),
         ("opencode", "oauth|api"),
         ("openclaw", "missingProvidersInUse"),
         ("hermes", "logged in"),

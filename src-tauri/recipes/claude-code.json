@@ -21,17 +21,18 @@
         { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude --version"] }
       ],
       "auth": {
-        "pattern": "interactive_terminal",
+        "pattern": "browser_login",
         "steps": [
-          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude"] }
+          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude auth login"] }
         ],
         "guide": [
-          "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
-          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-          "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+          "인터넷 창이 자동으로 열려요. 쓰던 Claude 계정으로 로그인해 주세요",
+          "로그인 화면에서 허용을 눌러 주세요",
+          "다 되면 알아서 다음으로 넘어가요. 까만 창에 입력할 건 없어요"
         ]
       },
       "verify": [
+        { "type": "run_command", "friendly": "로그인이 잘 됐는지 확인하고 있어요", "command": "/bin/zsh", "args": ["-lc", "claude auth status 2>&1 | grep -q '\"loggedIn\": true'"] },
         { "type": "run_command", "friendly": "Claude에게 첫 인사를 시켜 볼게요", "command": "/bin/zsh", "args": ["-lc", "claude -p '안녕이라고 한 단어로만 답해줘'"] }
       ],
       "update": [
@@ -54,17 +55,18 @@
         { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "claude --version"] }
       ],
       "auth": {
-        "pattern": "interactive_terminal",
+        "pattern": "browser_login",
         "steps": [
-          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "claude"] }
+          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "claude auth login"] }
         ],
         "guide": [
-          "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
-          "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-          "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+          "인터넷 창이 자동으로 열려요. 쓰던 Claude 계정으로 로그인해 주세요",
+          "로그인 화면에서 허용을 눌러 주세요",
+          "다 되면 알아서 다음으로 넘어가요. 까만 창에 입력할 건 없어요"
         ]
       },
       "verify": [
+        { "type": "run_command", "friendly": "로그인이 잘 됐는지 확인하고 있어요", "command": "powershell", "args": ["-Command", "if (-not (claude auth status 2>&1 | Select-String -Pattern '\"loggedIn\": true' -Quiet)) { exit 1 }"] },
         { "type": "run_command", "friendly": "Claude에게 첫 인사를 시켜 볼게요", "command": "cmd", "args": ["/C", "claude -p \"안녕이라고 한 단어로만 답해줘\""] }
       ],
       "update": [

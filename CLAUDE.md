@@ -44,6 +44,10 @@ cargo clippy -- -D warnings  # CI가 검사 (경고 = 실패)
 - 맥 서명용 `APPLE_CERTIFICATE`는 **Developer ID Application 인증서만** 담은 .p12여야 한다. 키체인에 Apple Development 인증서가 함께 있으면 `security export`가 둘을 묶어 내보내 "certificate does not match identity"로 실패한다 → openssl로 Developer ID만 분리해 .p12 재생성.
 - 공증은 Apple Developer 약관이 갱신되면 계정 소유자가 developer.apple.com에서 새로 **동의**해야 열린다(미동의 시 notarize 403 "required agreement is missing").
 - 레시피 번들 갱신은 `scripts/build_recipes_bundle.sh <버전> <개인키>`. 스크립트가 `recipes-bundle/`까지 복사하므로 **커밋·푸시하면 배포 끝**이다(앱의 `REMOTE_BASE`가 이 경로의 raw URL을 본다).
+- **`BUNDLED_MIN_VERSION`(`src-tauri/src/lib.rs`) 운용**: 앱 릴리스가 **내장 레시피를 바꿨으면 반드시 `(게시된 최신 bundleVersion + 1)`로 올린다.** 안 올리면 사용자 기기에 캐시된 낡은 번들이 새 내장 레시피를 이겨서 수정이 안 켜진다. 번들을 게시한 뒤에는 `min <= 게시 버전`으로 수렴시킨다(계속 앞질러 두면 원격 갱신을 통째로 무시한다).
+- **번들 버전은 단조 증가만 된다**(`store_bundle_with_key`가 `fetched <= current`를 조용히 버린다). 문구 한 줄 고치는 핫픽스도 버전을 올려야 배포된다. 같은 번호 재게시는 아무 일도 안 일어난다.
+- **레시피 스키마 확장 규칙**(2026-07-23 실측): `Recipe`·`AuthSpec`·`PlatformSpec`은 `deny_unknown_fields`라 **새 필드를 넣으면 옛 앱이 원격 번들 전체를 거부**한다(레시피 하나만 실패해도 번들이 통째로 버려진다). `AuthPattern`의 새 variant, `Step`의 새 `type` 값도 같다. **옛 앱을 안 깨는 확장 통로는 "기존 Step variant 안의 선택 필드" 하나뿐이다**(내부 태그드 enum이라 미지 필드를 조용히 무시한다).
+- **레시피 문구는 도구가 바뀌면 조용히 낡는다.** 2026-07-23 실사용 테스트에서 openclaw 안내("Enter로 기본값")가 실제 화면(영어로 yes 타이핑)과 전혀 달랐다. 도구 온보딩을 바꾼 릴리스가 있으면 안내 문구를 다시 확인한다. `real_recipes.rs`의 `auth_steps_use_dedicated_login_commands_not_bare_tui`·`auth_guides_do_not_mention_removed_steps`가 일부를 막는다.
 - 2026-07-22에 레포 3개를 이 레포 하나로 합쳤다(소스가 private이던 시절의 구조였다). 옛 `easy-harness-releases`·`easy-harness-recipes`는 v0.1.2 이하 앱이 아직 그 주소를 보므로 **삭제하지 말고 아카이브 상태로 둔다**(아카이브해도 raw·다운로드는 계속 200).
 
 ## 아키텍처
