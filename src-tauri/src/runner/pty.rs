@@ -151,6 +151,12 @@ impl PtyRunner for PortablePtyRunner {
         if let Some(path) = crate::runner::process::fresh_path() {
             cmd.env("PATH", path);
         }
+        // 맥·리눅스: GUI로 켠 앱은 PATH가 좁아서 사용자가 이미 깔아둔 도구를 못 찾는다.
+        // 앱 내 터미널(인증 단계)도 같은 문제를 겪으므로 여기서도 넓혀 준다.
+        #[cfg(unix)]
+        if let Some(path) = crate::runner::process::login_shell_path() {
+            cmd.env("PATH", path);
+        }
         let mut child = pair
             .slave
             .spawn_command(cmd)

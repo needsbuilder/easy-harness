@@ -25,6 +25,10 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // GUI로 켠 앱은 PATH가 좁아 사용자가 이미 깔아둔 도구를 못 찾는다.
+            // 로그인 셸에서 PATH를 구해 오는데 프로필이 느리면 몇 초가 걸리므로,
+            // 웹뷰가 뜨는 동안 백그라운드로 미리 데워 첫 화면이 기다리지 않게 한다.
+            runner::process::prewarm_login_shell_path();
             let bundled = app
                 .path()
                 .resource_dir()

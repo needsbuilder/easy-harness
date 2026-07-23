@@ -59,6 +59,45 @@ describe("runReducer", () => {
     expect(s.phase).toBe(2); // 버그 시 1로 후퇴
   });
 
+  it("설치 실패 뒤 마무리 이벤트가 와도 단계가 앞으로 밀리지 않는다", () => {
+    // 실측 버그(2026-07-23): OpenClaw 설치가 3단계에서 실패했는데 뒤따라온 done
+    // 이벤트가 phase를 4로 올려, 정작 실패한 3단계가 완료(✓)로 그려졌다.
+    let s = initialRunState("mock-tool");
+    s = runReducer(s, ev({ recipeId: "mock-tool", section: "install", stepIndex: 1 }));
+    expect(s.phase).toBe(3);
+    s = runReducer(s, ev({
+      recipeId: "mock-tool",
+      section: "install",
+      stepIndex: 1,
+      status: { kind: "failed", message: "설치 프로그램이 잘 끝나지 않았어요" },
+    }));
+    expect(s.phase).toBe(3);
+    expect(s.error).not.toBeNull();
+
+    s = runReducer(s, ev({
+      recipeId: "mock-tool",
+      section: "done",
+      stepIndex: 2,
+      status: { kind: "done", success: false },
+    }));
+    expect(s.phase).toBe(3); // 버그 시 4로 밀려서 3단계가 ✓로 보였다
+    expect(s.done).toBe(true);
+    expect(s.success).toBe(false);
+  });
+
+  it("성공 흐름에서는 마무리 이벤트가 단계를 4로 올린다", () => {
+    let s = initialRunState("mock-tool");
+    s = runReducer(s, ev({ recipeId: "mock-tool", section: "install", stepIndex: 1 }));
+    s = runReducer(s, ev({
+      recipeId: "mock-tool",
+      section: "done",
+      stepIndex: 2,
+      status: { kind: "done", success: true },
+    }));
+    expect(s.phase).toBe(4);
+    expect(s.success).toBe(true);
+  });
+
   it("진행 이벤트의 recipeId를 currentRecipeId로 추적한다", () => {
     let s = initialRunState("mock-plugin");
     expect(s.currentRecipeId).toBe("mock-plugin");
