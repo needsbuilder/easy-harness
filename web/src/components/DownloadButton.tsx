@@ -41,6 +41,9 @@ export function DownloadButton({ picks, failed }: { picks: Picks; failed: boolea
     return <GoldLink href={RELEASES_LATEST_PAGE}>다운로드</GoldLink>;
   }
 
+  // 맥 버튼은 애플 실리콘용이 기본. 애플 실리콘 자산이 없으면 인텔용이 버튼 자리를 대신한다.
+  const mac = picks.macArm ?? picks.macIntel;
+
   return (
     <>
       {picks.winExe && (
@@ -48,10 +51,22 @@ export function DownloadButton({ picks, failed }: { picks: Picks; failed: boolea
           윈도우용 다운로드
         </GoldLink>
       )}
-      {picks.macArm && (
-        <OutlineLink href={picks.macArm.url} icon={<AppleIcon />}>
+      {mac && (
+        <OutlineLink href={mac.url} icon={<AppleIcon />}>
           맥용 다운로드
         </OutlineLink>
+      )}
+      {picks.macArm && picks.macIntel && (
+        <p className="basis-full text-[0.88rem] break-keep text-txt-secondary">
+          인텔 칩 맥이라면{" "}
+          <a
+            href={picks.macIntel.url}
+            className="font-bold text-txt-gold underline underline-offset-2 transition hover:text-brand-hover"
+          >
+            인텔 맥용 설치 파일
+          </a>
+          을 받아주세요. 사과 메뉴의 &lsquo;이 Mac에 관하여&rsquo;에서 칩을 확인할 수 있어요.
+        </p>
       )}
     </>
   );
