@@ -41,6 +41,50 @@ fn claude_code_recipe_spec() {
     // 준비물 없이 단독 설치 (네이티브 인스톨러라 Node 불필요)
     let plan = build_plan(&cat, "claude-code", Platform::Mac, Flow::Install, &[]).unwrap();
     assert_eq!(plan.tool_order, vec!["claude-code"]);
+
+    // 윈도우 실기 사고 회귀 방지 (2026-07-25 대표님 윈도우 실측):
+    // 공식 install.ps1은 claude.exe를 %USERPROFILE%\.local\bin 에 넣고 **PATH에 등록하지 않는다**
+    // ("Native installation exists but ...\.local\bin is not in your PATH" 를 스스로 출력한다).
+    // 그래서 `claude --version` 으로 확인하면 설치가 성공했는데도 실패로 판정되고,
+    // 그 오판이 rollback 을 불러 방금 설치한 claude.exe 를 지웠다. 윈도우에서 설치 자체가 불가능했다.
+    let win = r.platforms.get(Platform::Windows).unwrap();
+    for (section, steps) in [
+        ("detect", &win.detect),
+        ("install", &win.install),
+        ("verify", &win.verify),
+        ("update", &win.update),
+    ] {
+        for step in steps.iter() {
+            let args = match step {
+                Step::CheckCommand { args, .. } | Step::RunCommand { args, .. } => args.join(" "),
+                _ => continue,
+            };
+            if !args.contains("claude") {
+                continue; // 설치기 실행 스텝 등 claude 를 부르지 않는 스텝은 대상 아님
+            }
+            assert!(
+                args.contains("USERPROFILE"),
+                "claude-code windows [{section}]: PATH에 의존하지 말고 절대경로(.local\\bin)를 먼저 봐야 함: {args}"
+            );
+        }
+    }
+    let win_auth = win.auth.as_ref().unwrap();
+    for step in &win_auth.steps {
+        if let Step::PtySession { args, .. } = step {
+            assert!(
+                args.join(" ").contains("USERPROFILE"),
+                "claude-code windows auth: 절대경로 우선이어야 함 (PATH 미등록 환경에서 로그인 불가): {:?}",
+                args
+            );
+        }
+    }
+    // rollback 은 비파괴여야 한다. 확인 스텝의 false-negative 가 방금 깐 설치를 지운 전례가 있다
+    // (lazycodex windows 가 같은 이유로 이미 비파괴다).
+    assert!(
+        win.rollback.is_empty(),
+        "claude-code windows rollback 은 비파괴(빈 배열)여야 함: {:?}",
+        win.rollback
+    );
 }
 
 /// 인증은 전용 로그인 명령을 써야 한다. 맨 도구 이름(`claude`·`opencode`)을 그냥 실행하면
@@ -130,6 +174,110 @@ fn harness_rollback_does_not_call_self_uninstaller() {
                 assert!(
                     !args.contains(&self_uninstall),
                     "{id} {p:?}: rollback이 셀프 언인스톨러를 부른다 → `{args}`"
+                );
+            }
+        }
+    }
+}
+
+/// 게시본(`recipes-bundle/`)이 앱에 박힌 공개키로 실제 검증되는지 확인한다.
+///
+/// 원격 번들은 서명이 안 맞으면 앱이 **조용히 버린다**(`remote.rs` 의 `verify_bundle(...).ok()?`).
+/// 그래서 엉뚱한 키로 서명하거나 서명 후 JSON을 한 글자라도 고치면, 배포한 줄 알았는데
+/// 아무에게도 도달하지 않는다. 에러도 안 뜬다. 그 사고를 CI가 막는다.
+/// 또한 게시 버전이 `BUNDLED_MIN_VERSION` 미만이면 같은 이유로 무효라 함께 검사한다.
+#[test]
+fn published_bundle_signature_verifies_with_app_pubkey() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("레포 루트")
+        .join("recipes-bundle");
+    let bundle_path = root.join("recipes-bundle.json");
+    let sig_path = root.join("recipes-bundle.json.sig");
+    if !bundle_path.exists() {
+        return; // 아직 게시본이 없는 상태면 검사 대상이 아니다
+    }
+    let bundle = std::fs::read(&bundle_path).expect("게시본 읽기");
+    let sig = std::fs::read_to_string(&sig_path).expect("서명 읽기");
+    easy_harness_lib::recipe::signing::verify_bundle(
+        &bundle,
+        sig.trim(),
+        easy_harness_lib::recipe::signing::RECIPE_PUBKEY_B64,
+    )
+    .expect("게시본 서명이 앱 공개키로 검증되지 않는다. 이 상태로 푸시하면 앱이 조용히 버린다");
+
+    // 게시 버전이 앱의 최소 요구 버전보다 낮으면 역시 조용히 무시된다.
+    // BUNDLED_MIN_VERSION 은 private 이라 lib.rs 원문에서 읽는다(앱 코드를 건드리지 않기 위해).
+    // 상수를 옮기거나 이름을 바꾸면 이 테스트가 먼저 깨져서 알려준다.
+    let lib_src = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs"),
+    )
+    .expect("lib.rs 읽기");
+    let min: u64 = lib_src
+        .lines()
+        .find_map(|l| {
+            l.split_once("const BUNDLED_MIN_VERSION: u64 =")
+                .map(|(_, v)| v.trim().trim_end_matches(';').to_string())
+        })
+        .expect("lib.rs 에서 BUNDLED_MIN_VERSION 을 못 찾았다")
+        .parse()
+        .expect("BUNDLED_MIN_VERSION 파싱");
+    let parsed: serde_json::Value = serde_json::from_slice(&bundle).expect("게시본 JSON 파싱");
+    let published = parsed["bundleVersion"]
+        .as_u64()
+        .expect("bundleVersion 없음");
+    assert!(
+        published >= min,
+        "게시본 bundleVersion({published})이 BUNDLED_MIN_VERSION({min}) 미만이라 앱이 무시한다"
+    );
+}
+
+/// `exit $LASTEXITCODE` 로 끝나는 PowerShell 스텝은 그 앞에 명령 존재 확인이 있어야 한다.
+///
+/// PowerShell 에서 없는 명령을 부르면 CommandNotFoundException 이 나는데, 이건 **문장 단위**
+/// 오류라 다음 문장(`exit $LASTEXITCODE`)이 그대로 실행된다. 그리고 네이티브 프로세스가 안 떴으니
+/// `$LASTEXITCODE` 는 `$null` 이고, PowerShell 의 `exit` 은 숫자가 아닌 인자를 **0으로 바꾼다.**
+/// 결과: 명령이 아예 없는 상태가 **성공(exit 0)** 으로 보고된다. 러너는 0을 성공으로 받으므로
+/// (`runner/mod.rs` execute_step) 아무것도 안 됐는데 초록 체크가 뜬다.
+/// 실패를 조용히 성공으로 바꾸는 것이 이 제품에서 가장 나쁜 결함이라 테스트로 막는다.
+/// (2026-07-25 로컬 PowerShell 7.6.4 실측: 가드 없으면 exit 0, 있으면 exit 1)
+#[test]
+fn powershell_exit_lastexitcode_steps_guard_command_existence() {
+    let cat = catalog();
+    for r in &cat.recipes {
+        let id = &r.id;
+        for p in [Platform::Mac, Platform::Windows] {
+            let Some(spec) = r.platforms.get(p) else {
+                continue;
+            };
+            let mut all: Vec<&Step> = Vec::new();
+            for list in [
+                &spec.detect,
+                &spec.install,
+                &spec.verify,
+                &spec.update,
+                &spec.uninstall,
+                &spec.rollback,
+            ] {
+                all.extend(list.iter());
+            }
+            if let Some(auth) = &spec.auth {
+                all.extend(auth.steps.iter());
+            }
+            for step in all {
+                let args = match step {
+                    Step::CheckCommand { args, .. }
+                    | Step::RunCommand { args, .. }
+                    | Step::PtySession { args, .. } => args.join(" "),
+                    _ => continue,
+                };
+                if !args.contains("exit $LASTEXITCODE") {
+                    continue;
+                }
+                assert!(
+                    args.contains("Get-Command"),
+                    "{id} {p:?}: `exit $LASTEXITCODE` 앞에 Get-Command 존재 확인이 없다. \
+                     명령이 없을 때 $LASTEXITCODE가 $null이라 exit 0(거짓 성공)이 된다: {args}"
                 );
             }
         }
@@ -477,7 +625,7 @@ fn windows_verify_gates_have_exit_guard() {
     // Select-String -Quiet는 미매치 시에도 프로세스 종료코드를 0으로 두므로,
     // 게이트로 쓰려면 반드시 `if (-not (...)) { exit 1 }` 가드가 있어야 한다.
     let cat = catalog();
-    for id in ["codex", "hermes", "openclaw", "opencode"] {
+    for id in ["claude-code", "codex", "hermes", "openclaw", "opencode"] {
         let r = cat.get(id).unwrap_or_else(|| panic!("{id} 레시피 없음"));
         let win = r.platforms.get(Platform::Windows).unwrap();
         let mut found = false;

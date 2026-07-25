@@ -48,16 +48,16 @@
     "windows": {
       "prerequisites": [],
       "detect": [
-        { "type": "check_command", "friendly": "Claude Code가 이미 있는지 볼게요", "command": "cmd", "args": ["/C", "claude --version"] }
+        { "type": "check_command", "friendly": "Claude Code가 이미 있는지 볼게요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c --version; exit $LASTEXITCODE"] }
       ],
       "install": [
         { "type": "download_run", "friendly": "Claude Code 공식 설치 프로그램을 실행하고 있어요", "url": "https://claude.ai/install.ps1", "file_name": "claude-install.ps1", "command": "powershell", "args": ["-ExecutionPolicy", "Bypass", "-File", "{{file}}"] },
-        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "cmd", "args": ["/C", "claude --version"] }
+        { "type": "check_command", "friendly": "설치가 잘 됐는지 확인하고 있어요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c --version; exit $LASTEXITCODE"] }
       ],
       "auth": {
         "pattern": "browser_login",
         "steps": [
-          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "cmd", "args": ["/C", "claude auth login"] }
+          { "type": "pty_session", "friendly": "Claude 계정을 연결하고 있어요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c auth login; exit $LASTEXITCODE"] }
         ],
         "guide": [
           "인터넷 창이 자동으로 열려요. 쓰던 Claude 계정으로 로그인해 주세요",
@@ -66,18 +66,16 @@
         ]
       },
       "verify": [
-        { "type": "run_command", "friendly": "로그인이 잘 됐는지 확인하고 있어요", "command": "powershell", "args": ["-Command", "if (-not (claude auth status 2>&1 | Select-String -Pattern '\"loggedIn\": true' -Quiet)) { exit 1 }"] },
-        { "type": "run_command", "friendly": "Claude에게 첫 인사를 시켜 볼게요", "command": "cmd", "args": ["/C", "claude -p \"안녕이라고 한 단어로만 답해줘\""] }
+        { "type": "run_command", "friendly": "로그인이 잘 됐는지 확인하고 있어요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; if (-not (& $c auth status 2>&1 | Select-String -Pattern '\"loggedIn\": true' -Quiet)) { exit 1 }"] },
+        { "type": "run_command", "friendly": "Claude에게 첫 인사를 시켜 볼게요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c -p \"안녕이라고 한 단어로만 답해줘\"; exit $LASTEXITCODE"] }
       ],
       "update": [
-        { "type": "run_command", "friendly": "Claude Code를 새 버전으로 바꾸고 있어요", "command": "cmd", "args": ["/C", "claude update"] }
+        { "type": "run_command", "friendly": "Claude Code를 새 버전으로 바꾸고 있어요", "command": "powershell", "args": ["-Command", "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c update; exit $LASTEXITCODE"] }
       ],
       "uninstall": [
         { "type": "run_command", "friendly": "Claude Code를 깨끗하게 지우고 있어요", "command": "powershell", "args": ["-Command", "Remove-Item -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; Remove-Item -Recurse -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\share\\claude\""] }
       ],
-      "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "powershell", "args": ["-Command", "Remove-Item -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\bin\\claude.exe\""] }
-      ]
+      "rollback": []
     }
   }
 }

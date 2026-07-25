@@ -1,5 +1,5 @@
 {
-  "bundleVersion": 1,
+  "bundleVersion": 3,
   "recipes": [
     {
       "schemaVersion": 1,
@@ -188,7 +188,7 @@
             }
           ],
           "auth": {
-            "pattern": "interactive_terminal",
+            "pattern": "browser_login",
             "steps": [
               {
                 "type": "pty_session",
@@ -196,17 +196,26 @@
                 "command": "/bin/zsh",
                 "args": [
                   "-lc",
-                  "claude"
+                  "claude auth login"
                 ]
               }
             ],
             "guide": [
-              "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
-              "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-              "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+              "인터넷 창이 자동으로 열려요. 쓰던 Claude 계정으로 로그인해 주세요",
+              "로그인 화면에서 허용을 눌러 주세요",
+              "다 되면 알아서 다음으로 넘어가요. 까만 창에 입력할 건 없어요"
             ]
           },
           "verify": [
+            {
+              "type": "run_command",
+              "friendly": "로그인이 잘 됐는지 확인하고 있어요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "claude auth status 2>&1 | grep -q '\"loggedIn\": true'"
+              ]
+            },
             {
               "type": "run_command",
               "friendly": "Claude에게 첫 인사를 시켜 볼게요",
@@ -257,10 +266,10 @@
             {
               "type": "check_command",
               "friendly": "Claude Code가 이미 있는지 볼게요",
-              "command": "cmd",
+              "command": "powershell",
               "args": [
-                "/C",
-                "claude --version"
+                "-Command",
+                "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c --version; exit $LASTEXITCODE"
               ]
             }
           ],
@@ -281,40 +290,49 @@
             {
               "type": "check_command",
               "friendly": "설치가 잘 됐는지 확인하고 있어요",
-              "command": "cmd",
+              "command": "powershell",
               "args": [
-                "/C",
-                "claude --version"
+                "-Command",
+                "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c --version; exit $LASTEXITCODE"
               ]
             }
           ],
           "auth": {
-            "pattern": "interactive_terminal",
+            "pattern": "browser_login",
             "steps": [
               {
                 "type": "pty_session",
                 "friendly": "Claude 계정을 연결하고 있어요",
-                "command": "cmd",
+                "command": "powershell",
                 "args": [
-                  "/C",
-                  "claude"
+                  "-Command",
+                  "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c auth login; exit $LASTEXITCODE"
                 ]
               }
             ],
             "guide": [
-              "까만 창에 로그인 안내가 나오면 Enter 키를 눌러 주세요. 인터넷 창이 자동으로 열려요",
-              "쓰던 Claude 계정으로 로그인하고 허용을 눌러 주세요",
-              "로그인이 끝나면 까만 창에 /exit 라고 입력해 마무리해 주세요"
+              "인터넷 창이 자동으로 열려요. 쓰던 Claude 계정으로 로그인해 주세요",
+              "로그인 화면에서 허용을 눌러 주세요",
+              "다 되면 알아서 다음으로 넘어가요. 까만 창에 입력할 건 없어요"
             ]
           },
           "verify": [
             {
               "type": "run_command",
-              "friendly": "Claude에게 첫 인사를 시켜 볼게요",
-              "command": "cmd",
+              "friendly": "로그인이 잘 됐는지 확인하고 있어요",
+              "command": "powershell",
               "args": [
-                "/C",
-                "claude -p \"안녕이라고 한 단어로만 답해줘\""
+                "-Command",
+                "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; if (-not (& $c auth status 2>&1 | Select-String -Pattern '\"loggedIn\": true' -Quiet)) { exit 1 }"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "Claude에게 첫 인사를 시켜 볼게요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c -p \"안녕이라고 한 단어로만 답해줘\"; exit $LASTEXITCODE"
               ]
             }
           ],
@@ -322,10 +340,10 @@
             {
               "type": "run_command",
               "friendly": "Claude Code를 새 버전으로 바꾸고 있어요",
-              "command": "cmd",
+              "command": "powershell",
               "args": [
-                "/C",
-                "claude update"
+                "-Command",
+                "$c = \"$env:USERPROFILE\\.local\\bin\\claude.exe\"; if (-not (Test-Path $c)) { if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { exit 1 }; $c = \"claude\" }; & $c update; exit $LASTEXITCODE"
               ]
             }
           ],
@@ -340,17 +358,7 @@
               ]
             }
           ],
-          "rollback": [
-            {
-              "type": "run_command",
-              "friendly": "설치하다 만 흔적을 정리하고 있어요",
-              "command": "powershell",
-              "args": [
-                "-Command",
-                "Remove-Item -Force -ErrorAction SilentlyContinue \"$env:USERPROFILE\\.local\\bin\\claude.exe\""
-              ]
-            }
-          ]
+          "rollback": []
         }
       }
     },
@@ -434,6 +442,15 @@
               "args": [
                 "-lc",
                 "codex login status"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "ChatGPT 로그인이 살아 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "codex login status 2>&1 | grep -q 'Logged in'"
               ]
             }
           ],
@@ -536,6 +553,15 @@
               "args": [
                 "/C",
                 "codex login status"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "ChatGPT 로그인이 살아 있는지 볼게요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "if (-not (codex login status 2>&1 | Select-String -SimpleMatch 'Logged in' -Quiet)) { exit 1 }"
               ]
             }
           ],
@@ -888,6 +914,15 @@
                 "-lc",
                 "hermes doctor"
               ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "Nous Portal 로그인이 살아 있는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "hermes auth status nous 2>&1 | grep -q 'logged in'"
+              ]
             }
           ],
           "update": [
@@ -989,6 +1024,15 @@
                 "/C",
                 "hermes doctor"
               ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "Nous Portal 로그인이 살아 있는지 볼게요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "if (-not (hermes auth status nous 2>&1 | Select-String -SimpleMatch 'logged in' -Quiet)) { exit 1 }"
+              ]
             }
           ],
           "update": [
@@ -1013,17 +1057,7 @@
               ]
             }
           ],
-          "rollback": [
-            {
-              "type": "run_command",
-              "friendly": "설치하다 만 흔적을 정리하고 있어요",
-              "command": "cmd",
-              "args": [
-                "/C",
-                "hermes uninstall --yes"
-              ]
-            }
-          ]
+          "rollback": []
         }
       }
     },
@@ -1741,17 +1775,7 @@
               ]
             }
           ],
-          "rollback": [
-            {
-              "type": "run_command",
-              "friendly": "설치하다 만 흔적을 정리하고 있어요",
-              "command": "/bin/zsh",
-              "args": [
-                "-lc",
-                "npx --yes lazycodex-ai uninstall"
-              ]
-            }
-          ]
+          "rollback": []
         },
         "windows": {
           "prerequisites": [
@@ -1761,7 +1785,7 @@
             {
               "type": "path_check",
               "friendly": "LazyCodex가 이미 붙어 있는지 볼게요",
-              "path": "{{home}}/.local/bin/omo"
+              "path": "{{home}}/.local/bin/omo.cmd"
             }
           ],
           "install": [
@@ -1779,7 +1803,7 @@
             {
               "type": "path_check",
               "friendly": "잘 붙었는지 확인하고 있어요",
-              "path": "{{home}}/.local/bin/omo"
+              "path": "{{home}}/.local/bin/omo.cmd"
             }
           ],
           "update": [
@@ -1804,17 +1828,7 @@
               ]
             }
           ],
-          "rollback": [
-            {
-              "type": "run_command",
-              "friendly": "설치하다 만 흔적을 정리하고 있어요",
-              "command": "cmd",
-              "args": [
-                "/C",
-                "npx --yes lazycodex-ai uninstall"
-              ]
-            }
-          ]
+          "rollback": []
         }
       }
     },
@@ -2029,14 +2043,14 @@
                 "command": "/bin/zsh",
                 "args": [
                   "-lc",
-                  "openclaw onboard"
+                  "openclaw onboard --classic"
                 ]
               }
             ],
             "guide": [
-              "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
-              "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-              "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+              "까만 창의 질문은 화살표 위아래로 골라서 Enter를 누르면 돼요. 영어를 입력할 일은 없어요",
+              "맨 처음 영어 질문은 'AI 비서에게 내 컴퓨터를 맡긴다'는 확인이에요. 괜찮으면 그대로 Enter를 눌러 주세요",
+              "다음 목록에서 쓰려는 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요"
             ]
           },
           "verify": [
@@ -2047,6 +2061,15 @@
               "args": [
                 "-lc",
                 "openclaw --version"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "모델 연결이 잘 됐는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "openclaw models status --json | grep -q '\"missingProvidersInUse\": \\[\\]'"
               ]
             }
           ],
@@ -2079,7 +2102,7 @@
               "command": "/bin/zsh",
               "args": [
                 "-lc",
-                "openclaw uninstall --all --yes --non-interactive || true"
+                "npm uninstall -g openclaw || true"
               ]
             }
           ]
@@ -2133,14 +2156,14 @@
                 "command": "cmd",
                 "args": [
                   "/C",
-                  "openclaw onboard"
+                  "openclaw onboard --classic"
                 ]
               }
             ],
             "guide": [
-              "까만 창에서 질문이 나오면 Enter 키로 기본값을 고르면 돼요",
-              "쓰고 싶은 AI 모델을 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-              "설정이 끝나면 이 화면이 알아서 다음으로 넘어가요"
+              "까만 창의 질문은 화살표 위아래로 골라서 Enter를 누르면 돼요. 영어를 입력할 일은 없어요",
+              "맨 처음 영어 질문은 'AI 비서에게 내 컴퓨터를 맡긴다'는 확인이에요. 괜찮으면 그대로 Enter를 눌러 주세요",
+              "다음 목록에서 쓰려는 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요"
             ]
           },
           "verify": [
@@ -2151,6 +2174,15 @@
               "args": [
                 "/C",
                 "openclaw --version"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "모델 연결이 잘 됐는지 볼게요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "if (-not (openclaw models status --json | Select-String -Pattern 'missingProvidersInUse.:.\\[\\]' -Quiet)) { exit 1 }"
               ]
             }
           ],
@@ -2183,7 +2215,7 @@
               "command": "cmd",
               "args": [
                 "/C",
-                "openclaw uninstall --all --yes --non-interactive"
+                "npm uninstall -g openclaw"
               ]
             }
           ]
@@ -2252,14 +2284,14 @@
                 "command": "/bin/zsh",
                 "args": [
                   "-lc",
-                  "opencode"
+                  "opencode auth login"
                 ]
               }
             ],
             "guide": [
-              "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
-              "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-              "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+              "까만 창에 로그인 전용 화면이 바로 떠요. 채팅 화면이 아니에요",
+              "위아래 화살표로 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "연결이 끝나면 이 화면이 알아서 다음으로 넘어가요"
             ]
           },
           "verify": [
@@ -2270,6 +2302,15 @@
               "args": [
                 "-lc",
                 "opencode --version"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "로그인 정보가 잘 저장됐는지 볼게요",
+              "command": "/bin/zsh",
+              "args": [
+                "-lc",
+                "opencode auth list 2>&1 | grep '●' | grep -Eq 'oauth|api'"
               ]
             }
           ],
@@ -2351,14 +2392,14 @@
                 "command": "cmd",
                 "args": [
                   "/C",
-                  "opencode"
+                  "opencode auth login"
                 ]
               }
             ],
             "guide": [
-              "까만 창이 뜨면 /connect 라고 입력하고 Enter 키를 눌러 주세요",
-              "목록에서 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
-              "연결이 끝나면 /exit 라고 입력해 마무리해 주세요"
+              "까만 창에 로그인 전용 화면이 바로 떠요. 채팅 화면이 아니에요",
+              "위아래 화살표로 쓰고 싶은 AI를 고르고, 안내에 따라 로그인하거나 열쇠 값을 붙여넣어 주세요",
+              "연결이 끝나면 이 화면이 알아서 다음으로 넘어가요"
             ]
           },
           "verify": [
@@ -2369,6 +2410,15 @@
               "args": [
                 "/C",
                 "opencode --version"
+              ]
+            },
+            {
+              "type": "run_command",
+              "friendly": "로그인 정보가 잘 저장됐는지 볼게요",
+              "command": "powershell",
+              "args": [
+                "-Command",
+                "if (-not (opencode auth list 2>&1 | Select-String -Pattern 'oauth|api' -Quiet)) { exit 1 }"
               ]
             }
           ],
