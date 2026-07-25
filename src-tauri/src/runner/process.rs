@@ -142,6 +142,11 @@ fn run_shell_for_path(shell: &str, flags: &str, timeout_secs: u64) -> Option<Str
 /// 조각 단위로 검사해서 PATH 모양이 아니면 거절한다. fish는 `-ilc` 를 받아주지만
 /// `$PATH` 가 리스트라 공백으로 이어 붙인 한 덩어리를 내놓는데, 그걸 통과시키면
 /// 존재하지 않는 디렉터리 하나가 PATH 맨 앞에 붙고 폴백도 안 돌아 아무 개선이 없다.
+///
+/// 단 공백을 품은 정상 디렉터리는 통과시켜야 한다. VS Code의 'code' 명령을 설치한
+/// 흔한 맥은 PATH에 "/Applications/Visual Studio Code.app/.../bin"이 들어가는데,
+/// 공백만 보고 거절하면 PATH 확장이 통째로 꺼져 이 기능이 고치려던
+/// "GUI 앱이 node를 못 찾아 설치 실패"가 그대로 재현된다(v0.1.5 이하 회귀).
 #[cfg(unix)]
 fn extract_marked_path(stdout: &str) -> Option<String> {
     let line = stdout
@@ -155,9 +160,27 @@ fn extract_marked_path(stdout: &str) -> Option<String> {
     let all_absolute = line
         .split(':')
         .filter(|s| !s.is_empty())
-        .all(|s| s.starts_with('/') && !s.contains(char::is_whitespace));
+        .all(|s| s.starts_with('/') && !is_space_joined_path_list(s));
     let has_any = line.split(':').any(|s| !s.is_empty());
     (all_absolute && has_any).then(|| line.to_string())
+}
+
+/// fish의 공백 조인 출력("/a /b /c")인지 판별한다. '/'로 시작하는 공백 토큰이
+/// 2개 이상이면 디렉터리 하나가 아니라 경로 목록으로 본다.
+///
+/// "전 토큰이 '/'로 시작"을 요구하면 안 된다: fish 목록 안에 공백 포함 디렉터리
+/// ("/Applications/Visual Studio Code.app/...")가 하나라도 섞이면 그 둘째 낱말
+/// (Studio)이 '/'로 안 시작해 목록 전체가 정상 경로로 오판되고, 이 함수가 막으려던
+/// 뒤죽박죽 PATH가 그대로 통과한다 (2026-07-25 리뷰에서 렌즈 3개가 독립 지적).
+/// 반대로 공백 포함 디렉터리 "하나"는 '/'로 시작하는 토큰이 1개뿐이라 통과한다.
+#[cfg(unix)]
+fn is_space_joined_path_list(segment: &str) -> bool {
+    segment
+        .split_whitespace()
+        .filter(|t| t.starts_with('/'))
+        .take(2)
+        .count()
+        >= 2
 }
 
 /// 로그인 셸 PATH 뒤에 현재 프로세스 PATH를 덧붙인다.
@@ -304,6 +327,51 @@ mod tests {
     fn marked_path_rejects_space_joined_fish_output() {
         let fish = format!("{PATH_MARKER}/usr/local/bin /usr/bin /bin\n");
         assert_eq!(extract_marked_path(&fish), None);
+    }
+
+    /// 공백을 품은 정상 디렉터리(VS Code 'code' 명령 등)는 통과해야 한다.
+    /// 공백만 보고 거절하면 흔한 맥에서 PATH 확장이 통째로 꺼진다(실사용 회귀).
+    #[cfg(unix)]
+    #[test]
+    fn marked_path_accepts_directory_names_with_spaces() {
+        let vscode = "/Applications/Visual Studio Code.app/Contents/Resources/app/bin";
+        let line = format!("{PATH_MARKER}/opt/homebrew/bin:{vscode}:/usr/bin\n");
+        let got = extract_marked_path(&line).expect("공백 포함 경로가 거절됨");
+        assert!(got.contains(vscode), "공백 경로 조각이 사라짐: {got}");
+    }
+
+    /// fish 판별 기준: '/'로 시작하는 공백 토큰이 2개 이상이면 목록으로 본다.
+    #[cfg(unix)]
+    #[test]
+    fn space_joined_detection_distinguishes_fish_from_spaced_dirs() {
+        assert!(is_space_joined_path_list("/usr/local/bin /usr/bin /bin"));
+        assert!(is_space_joined_path_list("/a /b"));
+        assert!(!is_space_joined_path_list("/usr/bin"));
+        assert!(!is_space_joined_path_list(
+            "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+        ));
+        // fish 목록 안에 공백 포함 디렉터리가 섞여도 목록으로 잡아야 한다.
+        // ('/'로 시작하는 토큰: /usr/local/bin, /Applications/Visual, /usr/bin = 3개)
+        assert!(is_space_joined_path_list(
+            "/usr/local/bin /Applications/Visual Studio Code.app/Contents/Resources/app/bin /usr/bin"
+        ));
+    }
+
+    /// fish 목록 안에 공백 포함 디렉터리가 섞인 블롭도 통째로 거절돼야 한다
+    /// (통과시키면 없는 경로가 PATH 맨 앞에 붙는다).
+    ///
+    /// 이 테스트가 막는 것은 **"전 토큰이 '/'로 시작해야 목록"이라고 쓴 중간 버전**이다.
+    /// 그 버전은 'Studio' 때문에 목록 판정에 실패해 이 블롭을 통과시켰다.
+    /// 공백만 보고 거절했던 최초 버전은 이 입력도 거절하므로 여기서 안 걸린다 —
+    /// 최초 버전으로의 회귀는 위 `..._accepts_directory_names_with_spaces` 와
+    /// `space_joined_detection_...` 가 잡는다.
+    #[cfg(unix)]
+    #[test]
+    fn marked_path_rejects_fish_blob_containing_spaced_dir() {
+        let blob = format!(
+            "{PATH_MARKER}/usr/local/bin /Applications/Visual Studio Code.app/Contents/Resources/app/bin /usr/bin\n"
+        );
+        assert_eq!(extract_marked_path(&blob), None);
     }
 
     /// 가짜 셸을 끼워 결정론적으로 검사한다. 실제 사용자 프로필에 안 기댄다.

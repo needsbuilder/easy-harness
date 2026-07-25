@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AuthGuidePanel } from "../components/AuthGuidePanel";
-import { PrimaryButton } from "../components/Buttons";
+import { PrimaryButton, SecondaryButton } from "../components/Buttons";
 import { LogPanel } from "../components/LogPanel";
 import { ErrorPanel } from "../components/ErrorPanel";
 import { MascotBubble } from "../components/MascotBubble";
@@ -23,6 +23,7 @@ export function Wizard() {
   const [attempt, setAttempt] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
   const [secretSubmitting, setSecretSubmitting] = useState(false);
+  const [secretError, setSecretError] = useState<string | null>(null);
 
   const tools = preview?.tools ?? [];
   const target = tools.find((t) => t.id === toolId);
@@ -32,6 +33,9 @@ export function Wizard() {
   const needsPreflight = pendingHarnesses.length > 0;
   const currentAuth = tools.find((t) => t.id === state.currentRecipeId)?.auth ?? null;
   const helperNames = helpers.map((t) => t.name);
+  // 이미 설치된 도구는 확인을 받아야 재설치를 시작한다. 카드 재클릭이 곧바로
+  // 재설치(와 그 실패 경로)로 이어지던 사고 방지 (QA 스윕 🔴-1).
+  const targetInstalled = preview?.targetInstalled ?? false;
 
   // 1) 미리보기: 도구·재시도 단위로 새로 읽는다 (읽기 전용이라 중복 호출 무해)
   useEffect(() => {
@@ -47,9 +51,10 @@ export function Wizard() {
     return () => { cancelled = true; };
   }, [toolId, attempt]);
 
-  // 2) 시작: 미리보기가 준비되고, 선행 안내가 없거나 사용자가 눌렀을 때 1회만.
-  //    StrictMode 이중 마운트에서도 같은 key면 시작 promise를 재사용한다.
-  const shouldStart = preview !== null && (!needsPreflight || confirmed);
+  // 2) 시작: 미리보기가 준비되고, 확인 게이트(선행 안내·재설치 확인)가 없거나
+  //    사용자가 눌렀을 때 1회만. StrictMode 이중 마운트에서도 같은 key면 시작 promise를 재사용한다.
+  const needsGate = needsPreflight || targetInstalled;
+  const shouldStart = preview !== null && (!needsGate || confirmed);
   type StartEntry = {
     key: string;
     refs: number;
@@ -127,12 +132,14 @@ export function Wizard() {
     }
   }, [state.done, state.success, navigate, toolId, toolName, helperNames]);
 
-  // waitingSecret이 바뀌면(해소되거나 재시도로 리셋되면) 제출 잠금을 푼다.
+  // waitingSecret이 바뀌면(해소되거나 재시도로 리셋되면) 제출 잠금과 안내를 푼다.
   useEffect(() => {
     setSecretSubmitting(false);
+    setSecretError(null);
   }, [state.waitingSecret]);
 
-  const preflight = preview !== null && needsPreflight && !confirmed && !state.error;
+  const reinstallGate = preview !== null && targetInstalled && !confirmed && !state.error;
+  const preflight = preview !== null && needsPreflight && !confirmed && !state.error && !reinstallGate;
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-surface-bg dark:bg-surface-bg-dark px-8 py-12">
@@ -145,6 +152,39 @@ export function Wizard() {
             onRetry={() => setAttempt((n) => n + 1)}
             onCopyLog={() => navigator.clipboard.writeText(state.logs.join("\n"))}
           />
+        ) : reinstallGate ? (
+          <>
+            <h1 className="text-display font-extrabold">이미 설치돼 있는 도구예요</h1>
+            <p className="mt-4 text-txt-secondary dark:text-txt-secondary-dark">
+              {toolName}{eunNeun(toolName)} 지금도 이 컴퓨터에서 쓸 수 있어요.
+              계속하면 처음부터 다시 설치해요. 잘 쓰고 있다면 다시 설치하지 않아도 돼요.
+            </p>
+            {/* 선행 하네스가 있으면 여기서 같이 알린다. 이 게이트가 preflight 화면을
+                대신 삼키므로, 안 보여주면 "다시 설치" 한 번에 다른 도구 설치·로그인이
+                고지 없이 시작된다 (2026-07-25 리뷰 high) */}
+            {needsPreflight && (
+              <>
+                <p className="mt-4 text-txt-secondary dark:text-txt-secondary-dark">
+                  계속하면 아래 순서대로 함께 진행해요.
+                </p>
+                <ol className="mx-auto mt-4 flex w-fit flex-col gap-2 text-left font-bold">
+                  {pendingHarnesses.map((t, i) => (
+                    <li key={t.id}>{i + 1}. {t.name} 설치하고 로그인하기</li>
+                  ))}
+                  <li>{pendingHarnesses.length + 1}. {toolName} 다시 설치하기</li>
+                </ol>
+              </>
+            )}
+            {/* 준비물도 같은 런에서 함께 설치된다. preflight 화면에만 이 각주가 있어서
+                재설치 게이트에서는 아무 고지 없이 Node.js 설치가 돌던 문제 */}
+            {helpers.some((t) => t.kind === "prerequisite") && (
+              <p className="mt-3 text-caption text-txt-tertiary">필요한 준비물도 함께 챙겨요.</p>
+            )}
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <SecondaryButton onClick={() => navigate(-1)}>그냥 둘게요</SecondaryButton>
+              <PrimaryButton onClick={() => setConfirmed(true)}>다시 설치할게요</PrimaryButton>
+            </div>
+          </>
         ) : preflight ? (
           <>
             <h1 className="text-display font-extrabold">먼저 챙길 게 있어요</h1>
@@ -180,9 +220,17 @@ export function Wizard() {
             <SecretForm
               label={state.waitingSecret}
               submitting={secretSubmitting}
+              error={secretError}
               onSubmit={(value) => {
+                if (!runId) return;
                 setSecretSubmitting(true);
-                runId && provideSecret(runId, state.waitingSecret as string, value);
+                setSecretError(null);
+                // 백엔드가 값을 거부하면(특수문자 등) 안내를 보여주고 폼을 다시 연다.
+                // 이 catch가 없으면 거부 시 폼이 "확인하는 중"으로 영구히 잠긴다.
+                provideSecret(runId, state.waitingSecret as string, value).catch((e) => {
+                  setSecretError(typeof e === "string" ? e : "등록하지 못했어요. 다시 시도해 볼까요?");
+                  setSecretSubmitting(false);
+                });
               }}
             />
           </>

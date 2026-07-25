@@ -36,6 +36,10 @@ pub struct DryRunTool {
 pub struct DryRunReport {
     pub target_id: String,
     pub platform: String,
+    /// 대상이 이미 설치돼 있는가(installed.json 기준). Wizard가 이 값으로
+    /// "이미 설치돼 있어요" 확인 화면을 띄워, 카드 재클릭이 확인 없이
+    /// 재설치로 이어지는 것을 막는다(QA 스윕 🔴-1).
+    pub target_installed: bool,
     pub tool_order: Vec<String>,
     pub tools: Vec<DryRunTool>,
     pub steps: Vec<DryRunStep>,
@@ -81,6 +85,7 @@ pub fn dry_run(
     Ok(DryRunReport {
         target_id: plan.target_id.clone(),
         platform: platform.as_str().to_string(),
+        target_installed: installed.iter().any(|i| i == target_id),
         tool_order: plan.tool_order.clone(),
         tools,
         steps: plan
@@ -198,6 +203,19 @@ mod tests {
         let report = dry_run(&catalog, "mock-plugin", Platform::Mac, &installed).unwrap();
         assert_eq!(report.tool_order, vec!["mock-plugin"]);
         assert_eq!(report.tools.len(), 1);
+        assert!(!report.target_installed, "대상 자신은 미설치");
+    }
+
+    /// 대상이 이미 설치돼 있으면 리포트에 표시된다. Wizard 재설치 확인 화면의 근거 값.
+    #[test]
+    fn report_flags_installed_target() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let installed = vec!["mock-tool".to_string()];
+        let report = dry_run(&catalog, "mock-tool", Platform::Mac, &installed).unwrap();
+        assert!(report.target_installed);
+        // camelCase 직렬화 확인 (프론트 types.ts 미러와의 계약)
+        let json = serde_json::to_string(&report).unwrap();
+        assert!(json.contains("\"targetInstalled\":true"), "{json}");
     }
 
     #[test]

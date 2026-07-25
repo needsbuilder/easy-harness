@@ -29,6 +29,40 @@ pub struct RunDeps<
 pub struct RunReport {
     pub success: bool,
     pub failed_step: Option<ProgressEvent>,
+    /// install 섹션까지 끝낸 도구 목록.
+    ///
+    /// **현재 프로덕션(commands.rs)은 이 값을 쓰지 않는다.** 실패한 런의 결과를
+    /// `installed.json`에 기록해 보려다 되돌렸다: 기록은 단순 메모가 아니라 다음 계획의
+    /// 입력이라서(`plan.rs`가 installed된 의존 도구를 서브트리째 건너뛴다), 로그인이
+    /// 실패한 도구를 "설치됨"으로 남기면 재시도에서 그 도구의 auth 스텝이 영구히
+    /// 생략되고 "모두 끝났어요"가 뜬다. 터미널을 못 쓰는 사용자에게는 복구 불가다
+    /// (2026-07-25 릴리스 관문 리뷰).
+    ///
+    /// 그래서 "install은 끝났는데 인증이 실패한 도구가 대시보드에 안 보이는 문제"는
+    /// 아직 열려 있다. 되살릴 때는 auth 섹션이 없는 도구(준비물)로 한정하거나,
+    /// installed.json과 계획 입력을 분리해야 한다. 테스트가 이 값을 검증하고 있다.
+    pub installed_tools: Vec<String>,
+}
+
+/// `before` 인덱스 앞까지 진행됐을 때 install 섹션을 끝낸 도구 목록.
+/// 실패는 런을 즉시 중단시키므로, 실패 지점보다 앞의 스텝은 전부 성공한 것이다.
+fn tools_with_completed_install(plan: &InstallPlan, before: usize) -> Vec<String> {
+    plan.tool_order
+        .iter()
+        .filter(|id| {
+            let mut has_install = false;
+            for (idx, s) in plan.steps.iter().enumerate() {
+                if &s.recipe_id == *id && matches!(s.section, Section::Install) {
+                    has_install = true;
+                    if idx >= before {
+                        return false;
+                    }
+                }
+            }
+            has_install
+        })
+        .cloned()
+        .collect()
 }
 
 pub async fn run_plan<
@@ -103,6 +137,7 @@ pub async fn run_plan<
                     return RunReport {
                         success: false,
                         failed_step: Some(failed),
+                        installed_tools: tools_with_completed_install(plan, i),
                     };
                 }
                 Err(e) => {
@@ -117,6 +152,7 @@ pub async fn run_plan<
                     return RunReport {
                         success: false,
                         failed_step: Some(failed),
+                        installed_tools: tools_with_completed_install(plan, i),
                     };
                 }
             }
@@ -148,6 +184,7 @@ pub async fn run_plan<
                     return RunReport {
                         success: false,
                         failed_step: Some(failed),
+                        installed_tools: tools_with_completed_install(plan, i),
                     };
                 }
                 StepOutcome::NeedsSecret { label, friendly: _ } => {
@@ -169,6 +206,7 @@ pub async fn run_plan<
                             return RunReport {
                                 success: false,
                                 failed_step: Some(failed),
+                                installed_tools: tools_with_completed_install(plan, i),
                             };
                         }
                     }
@@ -190,6 +228,7 @@ pub async fn run_plan<
                     return RunReport {
                         success: false,
                         failed_step: Some(failed),
+                        installed_tools: tools_with_completed_install(plan, i),
                     };
                 }
             }
@@ -199,12 +238,19 @@ pub async fn run_plan<
     RunReport {
         success: true,
         failed_step: None,
+        installed_tools: tools_with_completed_install(plan, plan.steps.len()),
     }
 }
 
 /// 실패한 레시피의 rollback 섹션을 best-effort 실행 (결과는 log로만, 이벤트 없음).
 /// 플랜과 같은 platform 인자를 쓴다 — 실행 OS 추측(Platform::current) 금지,
 /// 그래야 어느 CI 러너에서든 양쪽 플랫폼 플랜을 테스트할 수 있다.
+///
+/// install 섹션 실패에만 돈다. rollback의 존재 이유가 "설치하다 만 흔적" 정리인데,
+/// auth·verify에 도달했다는 것은 설치 자체는 이미 끝났다는 뜻이라 지울 "흔적"이 없다.
+/// 여기서 rollback을 돌리면 멀쩡한 설치물을 지운다. 특히 이미 설치된 도구의 카드를
+/// 다시 누른 사용자가 로그인 창을 닫기만 해도(pty 종료코드 != 0) 잘 쓰던 도구가
+/// 삭제되던 실사고 경로(2026-07-24 QA 스윕 🔴-1)가 이 게이트로 막힌다.
 async fn rollback<
     P: ProcessRunner,
     E: ProgressEmitter,
@@ -218,6 +264,9 @@ async fn rollback<
     run_id: &str,
     deps: &RunDeps<'_, P, E, O, D, Y>,
 ) {
+    if !matches!(failed.section, Section::Install) {
+        return;
+    }
     let Some(spec) = catalog
         .get(&failed.recipe_id)
         .and_then(|r| r.platforms.get(platform))
@@ -351,10 +400,81 @@ mod tests {
         // rollback의 echo까지 3번 호출됐는지
         assert_eq!(process.calls().len(), 3);
         assert!(process.calls()[2].1.join(" ").contains("rollback"));
+        // install 자체가 실패했으므로 설치 완료 목록은 비어야 한다
+        assert!(report.installed_tools.is_empty());
         assert!(matches!(
             emitter.events().last().unwrap().status,
             StepStatus::Done { success: false }
         ));
+    }
+
+    /// verify 실패 = 설치는 이미 끝난 상태. rollback이 돌면 방금 깐(또는 원래 쓰던)
+    /// 설치물을 지우므로 절대 돌면 안 된다. 게이트를 지우면 이 테스트가 깨진다.
+    #[tokio::test]
+    async fn verify_failure_does_not_rollback() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let plan = build_plan(&catalog, "mock-prereq", Platform::Mac, Flow::Install, &[]).unwrap();
+        // detect ok → install ok → verify fail. rollback echo가 이어지면 4번째 호출이 생긴다.
+        let process = FakeProcessRunner::new(vec![ok(), ok(), fail(), ok()]);
+        let emitter = CollectingEmitter::default();
+        let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
+        let pty = FakePtyRunner::default();
+        let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let report = run_plan(
+            &plan,
+            &catalog,
+            Platform::Mac,
+            "run-v",
+            deps(&process, &emitter, &opener, &downloader, &pty),
+            &mut rx,
+        )
+        .await;
+        assert!(!report.success);
+        let calls = process.calls();
+        assert_eq!(
+            calls.len(),
+            3,
+            "verify 실패 뒤 rollback이 돌았다: {calls:?}"
+        );
+        assert!(
+            !calls
+                .iter()
+                .any(|(_, args)| args.join(" ").contains("rollback")),
+            "rollback 명령이 실행됨: {calls:?}"
+        );
+        // install은 끝났으므로 "실재하는 설치"로 보고돼야 한다 (고아 설치 방지).
+        assert_eq!(report.installed_tools, vec!["mock-prereq".to_string()]);
+    }
+
+    /// 인증 터미널을 닫기만 해도(pty 종료코드 != 0) rollback이 돌아 멀쩡한 설치물을
+    /// 지우던 실사고 경로(QA 스윕 🔴-1). auth 섹션 실패는 rollback을 부르면 안 된다.
+    #[tokio::test]
+    async fn auth_pty_failure_does_not_rollback() {
+        let catalog = Catalog::load_dir(&Catalog::fixture_dir()).unwrap();
+        let plan = pty_plan(); // mock-tool의 auth 섹션 pty 스텝 하나
+        let process = FakeProcessRunner::new(vec![ok()]);
+        let emitter = CollectingEmitter::default();
+        let opener = FakeUrlOpener::default();
+        let downloader = FakeDownloader::default();
+        let pty = FakePtyRunner::new(vec![Ok(1)]);
+        let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let report = run_plan(
+            &plan,
+            &catalog,
+            Platform::Mac,
+            "run-a",
+            deps(&process, &emitter, &opener, &downloader, &pty),
+            &mut rx,
+        )
+        .await;
+        assert!(!report.success);
+        // mock-tool의 rollback echo가 실행됐다면 process 호출이 남는다.
+        assert!(
+            process.calls().is_empty(),
+            "auth 실패 뒤 rollback이 돌았다: {:?}",
+            process.calls()
+        );
     }
 
     #[tokio::test]

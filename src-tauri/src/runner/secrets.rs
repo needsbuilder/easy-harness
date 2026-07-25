@@ -1,5 +1,27 @@
 use std::collections::HashMap;
 
+/// 사용자가 붙여넣은 시크릿을 명령에 넣기 전에 거른다. 값은 `{{secret:...}}` 치환으로
+/// 셸 문자열(`zsh -lc "..."` 등) 안에 그대로 들어가므로, 따옴표·`$()`·세미콜론 같은
+/// 특수문자가 섞이면 임의 명령 실행으로 이어질 수 있다(2026-07-24 QA 스윕 🔴-5).
+/// 실제 API 키·인증키에 쓰이는 문자만 허용한다: 영문·숫자와 `_ - . @ : + = /`
+/// 성공 시 앞뒤 공백을 걷어낸 값을 돌려준다(복사할 때 줄바꿈이 따라오는 흔한 실수 흡수).
+pub fn validate_secret_value(value: &str) -> Result<String, String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err("값이 비어 있어요. 발급받은 인증키를 복사해서 붙여넣어 주세요.".into());
+    }
+    let ok = trimmed
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || "_-.@:+=/".contains(c));
+    if !ok {
+        return Err(
+            "쓸 수 없는 문자가 섞여 있어요. 발급받은 인증키만 다시 복사해서 붙여넣어 주세요."
+                .into(),
+        );
+    }
+    Ok(trimmed.to_string())
+}
+
 #[derive(Default)]
 pub struct SecretVault {
     values: HashMap<String, String>,
@@ -57,6 +79,48 @@ mod tests {
         assert_eq!(vault.mask("token sk-live-1234 ok"), "token ••• ok");
         assert!(vault.has("api_key"));
         assert!(!vault.has("none"));
+    }
+
+    /// 셸 특수문자가 섞인 값은 명령에 들어가기 전에 거른다(임의 명령 실행 차단).
+    #[test]
+    fn validate_rejects_shell_metacharacters() {
+        for bad in [
+            "abc; rm -rf ~",
+            "abc$(whoami)",
+            "abc`id`",
+            "abc\"def",
+            "abc'def",
+            "abc def",
+            "abc|def",
+            "abc&def",
+            "abc>def",
+            "abc\\def",
+            "한글키",
+            "",
+            "   ",
+        ] {
+            assert!(
+                validate_secret_value(bad).is_err(),
+                "거부돼야 하는 값이 통과함: {bad:?}"
+            );
+        }
+    }
+
+    /// 실존 키 형태는 통과하고, 앞뒤 공백·줄바꿈은 걷어낸다.
+    #[test]
+    fn validate_accepts_real_key_shapes_and_trims() {
+        for good in [
+            "sk-live-1234",
+            "ybgwon96",
+            "AIzaSyB_x.y:z+w=/q",
+            "ghp_Abc123",
+        ] {
+            assert_eq!(validate_secret_value(good).as_deref(), Ok(good));
+        }
+        assert_eq!(
+            validate_secret_value("  sk-live-1234\n").as_deref(),
+            Ok("sk-live-1234")
+        );
     }
 
     #[test]

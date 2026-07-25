@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { PrimaryButton } from "./Buttons";
 
-export function SecretForm({ label, onSubmit, submitting = false }: {
-  label: string; onSubmit: (value: string) => void; submitting?: boolean;
+export function SecretForm({ label, onSubmit, submitting = false, error = null }: {
+  label: string; onSubmit: (value: string) => void; submitting?: boolean; error?: string | null;
 }) {
   const [value, setValue] = useState("");
   return (
@@ -29,6 +29,11 @@ export function SecretForm({ label, onSubmit, submitting = false }: {
         placeholder="복사해 온 값을 여기에 붙여넣어 주세요"
         className="rounded-badge border border-line dark:border-line-dark bg-surface-card dark:bg-surface-card-dark px-4 py-3 font-mono"
       />
+      {error && (
+        <p role="alert" className="text-caption text-status-error">
+          {error}
+        </p>
+      )}
       <p className="text-caption text-txt-tertiary">
         이 값({label})은 도구에만 전달하고 이지 하네스는 저장하지 않아요.
       </p>

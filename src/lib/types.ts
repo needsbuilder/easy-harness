@@ -30,7 +30,7 @@ export interface DryRunTool {
   id: string; name: string; kind: ToolKind; auth: DryRunAuth | null;
 }
 export interface DryRunReport {
-  targetId: string; platform: string; toolOrder: string[];
+  targetId: string; platform: string; targetInstalled: boolean; toolOrder: string[];
   tools: DryRunTool[]; steps: DryRunStep[];
 }
 

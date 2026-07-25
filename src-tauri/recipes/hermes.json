@@ -75,9 +75,7 @@
       "uninstall": [
         { "type": "run_command", "friendly": "Hermes를 깨끗하게 지우고 있어요", "command": "cmd", "args": ["/C", "hermes uninstall --yes"] }
       ],
-      "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "cmd", "args": ["/C", "hermes uninstall --yes"] }
-      ]
+      "rollback": []
     }
   }
 }

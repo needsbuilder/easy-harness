@@ -201,6 +201,9 @@ pub fn provide_secret(
     value: String,
     ctx: State<'_, AppContext>,
 ) -> Result<(), String> {
+    // 셸 특수문자 차단 + 앞뒤 공백 정리. 값이 {{secret:...}} 치환으로 셸 문자열에
+    // 그대로 들어가므로 여기서 걸러야 임의 명령 실행이 막힌다 (QA 스윕 🔴-5).
+    let value = crate::runner::secrets::validate_secret_value(&value)?;
     let sender = ctx
         .runs
         .lock()
@@ -319,6 +322,10 @@ pub fn start_flow(
                 pty: &pty,
                 vault: SecretVault::new(),
             };
+            // 실패한 런은 installed.json에 아무것도 쓰지 않는다. 기록하면 다음 계획에서
+            // 그 도구가 통째로 건너뛰어져(plan.rs의 installed 스킵) 로그인 단계가 영구히
+            // 생략되고, 실제로는 안 되는데 "모두 끝났어요" 화면이 뜬다.
+            // (report.installed_tools는 그 사고 때문에 소비를 보류한 상태다)
             run_plan(&plan, &catalog, platform, &id_for_task, deps, &mut rx)
                 .await
                 .success

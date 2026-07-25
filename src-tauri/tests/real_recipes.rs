@@ -72,7 +72,16 @@ fn auth_steps_use_dedicated_login_commands_not_bare_tui() {
 fn rollback_must_not_wipe_user_data() {
     let cat = catalog();
     // 도구를 지우는 건 맞지만, 사용자 데이터까지 쓸어가는 표식이 있으면 안 된다.
-    let banned = ["--all", "rm -rf ~", "--reset-scope full"];
+    // "uninstall --yes"류 = 도구 자신의 완전 제거 명령을 rollback에 재사용하는 패턴
+    // (2026-07-24 QA 스윕 🔴-2: hermes 윈도우가 이 틈으로 통과했다).
+    let banned = [
+        "--all",
+        "rm -rf ~",
+        "--reset-scope full",
+        "uninstall --yes",
+        "uninstall -y",
+        "lazycodex-ai uninstall",
+    ];
     for r in &cat.recipes {
         let id = &r.id;
         for p in [Platform::Mac, Platform::Windows] {
@@ -90,6 +99,38 @@ fn rollback_must_not_wipe_user_data() {
                         "{id} {p:?}: rollback이 사용자 데이터를 지운다 → `{bad}` in `{args}`"
                     );
                 }
+            }
+        }
+    }
+}
+
+/// harness(독립 앱) 레시피의 rollback이 도구 자신의 셀프 언인스톨 서브커맨드
+/// (`<도구> uninstall ...`)를 부르면 안 된다. rollback은 "설치하다 만 흔적" 정리인데
+/// 셀프 언인스톨러는 앱 전체(때로 설정·상태까지)를 지우도록 만들어져 있어 층위가 다르다.
+/// 바이너리 삭제(rm -f)나 패키지 매니저 제거(npm/bun uninstall·remove)는 허용.
+/// (2026-07-23 openclaw 실사고, 2026-07-24 hermes 윈도우가 같은 패턴이었다)
+#[test]
+fn harness_rollback_does_not_call_self_uninstaller() {
+    let cat = catalog();
+    for r in &cat.recipes {
+        if r.kind != ToolKind::Harness {
+            continue;
+        }
+        let id = &r.id;
+        let self_uninstall = format!("{id} uninstall");
+        for p in [Platform::Mac, Platform::Windows] {
+            let Some(spec) = r.platforms.get(p) else {
+                continue;
+            };
+            for step in &spec.rollback {
+                let args = match step {
+                    Step::RunCommand { args, .. } => args.join(" "),
+                    _ => continue,
+                };
+                assert!(
+                    !args.contains(&self_uninstall),
+                    "{id} {p:?}: rollback이 셀프 언인스톨러를 부른다 → `{args}`"
+                );
             }
         }
     }
@@ -197,6 +238,19 @@ fn hermes_recipe_spec() {
         mac.auth.as_ref().unwrap().pattern,
         easy_harness_lib::recipe::schema::AuthPattern::BrowserLogin
     );
+    // rollback은 바이너리 삭제까지만. `hermes uninstall --yes`(셀프 언인스톨)를 rollback에
+    // 쓰면 설치 실패가 곧 앱 제거가 된다 (2026-07-24 QA 스윕 🔴-2, 윈도우가 이 패턴이었다).
+    let mac_rollback = format!("{:?}", mac.rollback);
+    assert!(
+        !mac_rollback.contains("hermes uninstall"),
+        "hermes mac rollback이 셀프 언인스톨러를 부름: {mac_rollback}"
+    );
+    let win = r.platforms.get(Platform::Windows).unwrap();
+    assert!(
+        win.rollback.is_empty(),
+        "hermes windows rollback은 비파괴(빈 배열)여야 함(실기 미검증 플랫폼): {:?}",
+        win.rollback
+    );
 }
 
 #[test]
@@ -262,11 +316,18 @@ fn lazycodex_recipe_pulls_codex_and_node_first() {
         win_verify.contains("omo.cmd"),
         "lazycodex windows verify는 실측된 omo.cmd 절대경로 확인이어야 함(확장자 없는 경로 금지): {win_verify}"
     );
-    let win_rollback = format!("{:?}", win.rollback);
-    assert!(
-        !win_rollback.contains("uninstall"),
-        "lazycodex windows rollback은 비파괴여야 함(verify false-negative가 설치를 지우면 안 됨): {win_rollback}"
-    );
+    // 양 플랫폼 공통: rollback은 비파괴(빈 배열)여야 한다. lazycodex의 uninstall은
+    // 바이너리만이 아니라 Codex 설정에 심은 훅까지 걷어내는 완전 제거라, 설치 실패
+    // 시점(특히 기존 설치 위 재설치 실패)에 돌리면 잘 쓰던 설치를 지운다.
+    // (2026-07-24 QA 스윕 🔴-2. 맥이 이 패턴으로 뚫려 있었다)
+    for p in [Platform::Mac, Platform::Windows] {
+        let spec = r.platforms.get(p).unwrap();
+        assert!(
+            spec.rollback.is_empty(),
+            "lazycodex {p:?} rollback은 비파괴(빈 배열)여야 함: {:?}",
+            spec.rollback
+        );
+    }
 }
 
 #[test]

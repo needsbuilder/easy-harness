@@ -26,9 +26,7 @@
       "uninstall": [
         { "type": "run_command", "friendly": "LazyCodex를 깨끗하게 지우고 있어요", "command": "/bin/zsh", "args": ["-lc", "npx --yes lazycodex-ai uninstall"] }
       ],
-      "rollback": [
-        { "type": "run_command", "friendly": "설치하다 만 흔적을 정리하고 있어요", "command": "/bin/zsh", "args": ["-lc", "npx --yes lazycodex-ai uninstall"] }
-      ]
+      "rollback": []
     },
     "windows": {
       "prerequisites": ["nodejs-lts"],

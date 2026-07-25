@@ -17,6 +17,15 @@ describe("SecretForm", () => {
     expect(onSubmit).toHaveBeenCalledWith("sk-live-1");
   });
 
+  it("error가 있으면 안내를 role=alert로 보여준다", () => {
+    render(<SecretForm label="api_key" onSubmit={vi.fn()} error="쓸 수 없는 문자가 섞여 있어요" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/쓸 수 없는 문자/);
+    // 에러가 없으면 안내도 없다
+    cleanup();
+    render(<SecretForm label="api_key" onSubmit={vi.fn()} />);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("제출하면 입력이 비워지고, submitting이면 버튼이 잠긴다", () => {
     const onSubmit = vi.fn();
     const { rerender } = render(<SecretForm label="api_key" onSubmit={onSubmit} />);
