@@ -23,7 +23,7 @@ use state::StateStore;
 /// 번들을 게시한 뒤에는 `min <= 게시 버전` 상태로 수렴시킨다(계속 앞질러 두면 원격 갱신을 통째로 무시하게 된다).
 ///
 /// 3 = v0.1.5의 openclaw rollback·onboard 교체분. 게시 번들은 아직 1이다.
-const BUNDLED_MIN_VERSION: u64 = 3;
+const BUNDLED_MIN_VERSION: u64 = 4;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

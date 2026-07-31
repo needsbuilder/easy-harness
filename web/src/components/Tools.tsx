@@ -7,7 +7,7 @@ const harnesses = [
   { name: "OpenCode", icon: "/icons/opencode.png" },
 ];
 
-const plugins = ["인세인서치", "LazyCodex", "한국 법령 검색", "K-스킬", "임낫에이아이"];
+const plugins = ["인세인서치", "LazyCodex", "한국 법령 검색", "임낫에이아이"];
 
 export function Tools() {
   return (

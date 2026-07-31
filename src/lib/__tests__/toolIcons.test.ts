@@ -10,7 +10,7 @@ describe("toolIconFor", () => {
 
   it("플러그인·미지원 도구는 undefined (첫 글자 폴백)", () => {
     // 오픈소스 플러그인은 공식 로고가 없어 아이콘 파일이 없다
-    for (const id of ["lazycodex", "insane-search", "korean-law-mcp", "k-skill", "im-not-ai", "mock-tool"]) {
+    for (const id of ["lazycodex", "insane-search", "korean-law-mcp", "im-not-ai", "mock-tool"]) {
       expect(toolIconFor(id), id).toBeUndefined();
     }
   });

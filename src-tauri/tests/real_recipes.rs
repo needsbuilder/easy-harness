@@ -226,10 +226,44 @@ fn published_bundle_signature_verifies_with_app_pubkey() {
     let published = parsed["bundleVersion"]
         .as_u64()
         .expect("bundleVersion 없음");
-    assert!(
-        published >= min,
-        "게시본 bundleVersion({published})이 BUNDLED_MIN_VERSION({min}) 미만이라 앱이 무시한다"
-    );
+    if published < min {
+        // 앱이 게시본을 **의도적으로** 거부하는 상태다(내장 레시피가 이긴다).
+        // 이게 정당하려면 내장 레시피가 게시본과 실제로 달라야 한다.
+        // 같은데 min 만 앞질러 두면 원격 갱신 통로만 죽이고 얻는 게 없다.
+        // (2026-08-01: 레시피 서명키를 못 써서 k-skill 제거를 앱 릴리스로 배포한 상태.
+        //  번들을 다시 게시하면 min 을 게시 버전 이하로 되돌려 이 분기를 빠져나갈 것)
+        let sorted_by_id = |xs: &[serde_json::Value]| {
+            let mut v = xs.to_vec();
+            v.sort_by(|a, b| {
+                a["id"]
+                    .as_str()
+                    .unwrap_or("")
+                    .cmp(b["id"].as_str().unwrap_or(""))
+            });
+            v
+        };
+        let published_recipes =
+            sorted_by_id(parsed["recipes"].as_array().expect("게시본 recipes 배열"));
+        let bundled_recipes = {
+            let mut v: Vec<serde_json::Value> = std::fs::read_dir(Catalog::bundled_dir())
+                .expect("내장 recipes 디렉터리")
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|x| x == "json"))
+                .map(|p| {
+                    serde_json::from_slice(&std::fs::read(&p).expect("내장 레시피 읽기"))
+                        .expect("내장 레시피 JSON 파싱")
+                })
+                .collect();
+            v = sorted_by_id(&v);
+            v
+        };
+        assert_ne!(
+            published_recipes, bundled_recipes,
+            "게시본({published})과 내장 레시피가 똑같은데 BUNDLED_MIN_VERSION({min})이 앞서 있다. \
+             원격 갱신만 죽고 얻는 게 없으니 min 을 {published} 이하로 되돌릴 것"
+        );
+    }
 }
 
 /// `exit $LASTEXITCODE` 로 끝나는 PowerShell 스텝은 그 앞에 명령 존재 확인이 있어야 한다.
@@ -546,30 +580,17 @@ fn im_not_ai_recipe_installs_humanize_korean_plugin() {
     }
 }
 
+/// k-skill 레시피는 2026-07-31에 카탈로그에서 내렸다(레시피 파일·번들 v4에서 제거).
+/// 이유: `skills add --all` 이라 업스트림 레포에 들어오는 스킬을 우리가 고를 수 없는데,
+/// 그 안에 상표·타사 데이터 무단 수집 계열이 실제로 들어온 전례가 있다(블루리본 건, 2026-04 지원중단).
+/// 게다가 uninstall 이 이름 하드코딩이라 설치 122개 대 제거 102개로 계속 벌어졌다.
+/// 되돌린다면 `--all` 대신 공공데이터 기반 스킬만 명시 목록으로 깔고, uninstall 을 그 목록과 일치시킬 것.
 #[test]
-fn k_skill_recipe_uses_skills_cli_with_full_set() {
-    let cat = catalog();
-    let r = cat.get("k-skill").expect("k-skill 레시피 없음");
-    assert_eq!(r.kind, ToolKind::Plugin);
-    assert_eq!(r.requires, vec!["claude-code"]);
-    let plan = build_plan(&cat, "k-skill", Platform::Mac, Flow::Install, &[]).unwrap();
-    assert_eq!(
-        plan.tool_order,
-        vec!["claude-code", "nodejs-lts", "k-skill"]
+fn k_skill_recipe_is_not_in_catalog() {
+    assert!(
+        catalog().get("k-skill").is_none(),
+        "k-skill 은 의도적으로 내렸다. 되살리려면 위 주석의 조건을 먼저 만족시킬 것"
     );
-    for p in [Platform::Mac, Platform::Windows] {
-        let spec = r.platforms.get(p).unwrap();
-        assert!(spec.auth.is_none(), "{p:?}");
-        let install = format!("{:?}", spec.install);
-        assert!(
-            install.contains("skills add NomaDamas/k-skill --all -g -y -a claude-code"),
-            "{p:?}"
-        );
-        let un = format!("{:?}", spec.uninstall);
-        assert!(un.contains("skills remove"), "{p:?}");
-        assert!(un.contains("lotto-results"), "{p:?}: 이름 명시 제거 목록");
-        assert!(un.contains("-g -y"), "{p:?}");
-    }
 }
 
 #[test]
@@ -651,12 +672,12 @@ fn windows_verify_gates_have_exit_guard() {
 #[test]
 fn catalog_is_complete_after_m4() {
     let cat = catalog();
-    assert_eq!(cat.recipes.len(), 13, "하네스 6 + 플러그인 5 + 준비물 2");
+    assert_eq!(cat.recipes.len(), 12, "하네스 6 + 플러그인 4 + 준비물 2");
     let count = |k: ToolKind| cat.recipes.iter().filter(|r| r.kind == k).count();
     assert_eq!(count(ToolKind::Harness), 6);
-    assert_eq!(count(ToolKind::Plugin), 5);
+    assert_eq!(count(ToolKind::Plugin), 4);
     assert_eq!(count(ToolKind::Prerequisite), 2);
-    // 플러그인 5종 공통 계약: requires 비어 있지 않고, 제3자 오픈소스라 source 표기 필수
+    // 플러그인 공통 계약: requires 비어 있지 않고, 제3자 오픈소스라 source 표기 필수
     for r in cat.recipes.iter().filter(|r| r.kind == ToolKind::Plugin) {
         assert!(
             !r.requires.is_empty(),
