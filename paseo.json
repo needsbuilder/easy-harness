@@ -1,0 +1,29 @@
+{
+  "worktree": {
+    "setup": [
+      "bun install --frozen-lockfile",
+      "cd web && bun install --frozen-lockfile",
+      "if [ -f \"$PASEO_SOURCE_CHECKOUT_PATH/web/.env.local\" ]; then cp \"$PASEO_SOURCE_CHECKOUT_PATH/web/.env.local\" web/.env.local; fi"
+    ]
+  },
+  "scripts": {
+    "app": {
+      "type": "service",
+      "command": "bun run dev -- --host \"$HOST\" --port \"$PASEO_PORT\""
+    },
+    "web": {
+      "type": "service",
+      "command": "cd web && bun run dev -- --host \"$HOST\" --port \"$PASEO_PORT\""
+    },
+    "test": { "command": "bun run test" },
+    "web-test": { "command": "cd web && bun run test" },
+    "build": { "command": "bun run build" },
+    "cargo-test": { "command": "cargo test --manifest-path src-tauri/Cargo.toml" }
+  },
+  "metadataGeneration": {
+    "title": { "instructions": "Use a short, outcome-focused title." },
+    "branchName": { "instructions": "Use a task-appropriate feat/, fix/, chore/, or docs/ prefix followed by a short kebab-case English description." },
+    "commitMessage": { "instructions": "Use Conventional Commits with an appropriate scope and an imperative subject." },
+    "pullRequest": { "instructions": "Start with a one-sentence summary, then include a Testing section with the commands run and their results." }
+  }
+}
