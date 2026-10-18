@@ -10,10 +10,10 @@ AI 코딩 도구를 설치하고 로그인하고 확인하는 일을 대신 해�
 명령어를 한 줄도 몰라도 됩니다.
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/needslab-ai/easy-harness-releases/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/needsbuilder/easy-harness/releases/latest)
 [![Download](https://img.shields.io/badge/download-latest-brightgreen.svg)](https://easyharness.needslab.ai)
 
-[홈페이지](https://easyharness.needslab.ai) · [다운로드](https://github.com/needslab-ai/easy-harness-releases/releases/latest) · [도구 추가하기](CONTRIBUTING.md)
+[홈페이지](https://easyharness.needslab.ai) · [다운로드](https://github.com/needsbuilder/easy-harness/releases/latest) · [도구 추가하기](CONTRIBUTING.md)
 
 </div>
 
@@ -96,12 +96,15 @@ Node.js가 필요하면 알아서 먼저 깔고, 설치가 끝나면 로그인 �
 
 ## 설치해서 쓰기
 
-[최신 릴리스](https://github.com/needslab-ai/easy-harness-releases/releases/latest)에서 받으세요.
+[최신 릴리스](https://github.com/needsbuilder/easy-harness/releases/latest)에서 받으세요.
 
 - **맥**: `.dmg` (애플 실리콘 / 인텔)
 - **윈도우**: `.exe` 설치 파일
 
-맥 빌드는 애플 공증(notarization)을 거쳤고, 윈도우 빌드도 서명되어 있습니다.
+맥 빌드는 Developer ID로 서명하고 애플 공증(notarization)을 거쳤습니다.
+윈도우 빌드는 아직 코드 서명이 되어 있지 않아서, 처음 실행할 때 Windows SmartScreen 경고가 뜰 수 있습니다.
+이때는 "추가 정보"를 누른 뒤 "실행"을 누르면 됩니다.
+자동 업데이트는 맥·윈도우 모두 Tauri 업데이터 서명(`.sig`)을 확인한 뒤에만 설치됩니다.
 
 ## 개발
 
