@@ -20,7 +20,7 @@ export function CtaSection({ picks, failed }: { picks: Picks; failed: boolean })
             지금 바로 시작해 보세요
           </h2>
           <p className="mt-2.5 break-keep text-txt-secondary">
-            애플 공증과 서명을 마친 안전한 앱이에요.
+            맥 버전은 애플 공증과 서명을 마친 앱이에요.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3 md:justify-start">
             <DownloadButton picks={picks} failed={failed} />
